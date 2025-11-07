@@ -10,11 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-using Test
 using Qiskit
 using Qiskit.C
+using Test
+using Aqua
 
-include("test_circuit.jl")
-include("test_target.jl")
-include("test_transpiler.jl")
-include("test_observable.jl")
+@testset "Qiskit.jl" begin
+    @testset "Code quality (Aqua.jl)" begin
+        Aqua.test_all(Qiskit)
+    end
+    include("test_circuit.jl")
+    include("test_target.jl")
+    include("test_transpiler.jl")
+    include("test_observable.jl")
+end

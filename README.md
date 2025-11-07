@@ -1,5 +1,12 @@
 # Qiskit.jl
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://qiskit.github.io/Qiskit.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://qiskit.github.io/Qiskit.jl/dev/)
+[![Build Status](https://github.com/Qiskit/Qiskit.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Qiskit/Qiskit.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://coveralls.io/repos/github.com/Qiskit/Qiskit.jl/badge.svg?branch=main)](https://coveralls.io/github.com/Qiskit/Qiskit.jl?branch=main)
+[![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.html)
+[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+
 Julia wrapper of [Qiskit's C API](https://docs.quantum.ibm.com/api/qiskit-c)
 
 ## Example

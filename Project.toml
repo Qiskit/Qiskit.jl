@@ -1,5 +1,6 @@
 name = "Qiskit"
 uuid = "91d9a17d-f964-4b6c-a3c4-2f4cfdea2c95"
+authors = ["Jim Garrison <garrison@ibm.com> and contributors"]
 version = "0.2.0"
 
 [deps]
@@ -9,10 +10,15 @@ Qiskit_jll = "b54e8e98-f244-53b3-a8e8-4727a4907f76"
 
 [compat]
 julia = "1.10"
+Libdl = "1"
+Compat = "3.47"
 Qiskit_jll = "~2.2.3"
+Aqua = "0.8.14"
+Test = "1"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Aqua", "Test"]
