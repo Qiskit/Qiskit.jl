@@ -104,8 +104,11 @@ function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit
     qk_circuit_unitary(cl.qc, matrix, qubits)
 end
 
+function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
+    union(fieldnames(typeof(obj)), (:num_qubits, :num_clbits, :num_instructions, :reset, :measure, :barrier, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
+end
+
 function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
-    check_not_null(getfield(qc, :ptr))
     if sym === :num_qubits
         return qk_circuit_num_qubits(qc)
     elseif sym === :num_clbits
