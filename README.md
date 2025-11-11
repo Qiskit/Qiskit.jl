@@ -15,7 +15,7 @@ Julia wrapper of [Qiskit's C API](https://docs.quantum.ibm.com/api/qiskit-c)
 using Qiskit
 
 function build_bell()
-    qc = QuantumCircuit(2, 2)
+    qc = QuantumCircuit(2, 2) # 2 qubits, 2 clbits
     qc.h(1)
     qc.cx(1, 2)
     qc.measure(1, 1)
@@ -23,6 +23,10 @@ function build_bell()
     qc
 end
 ```
+
+The `QuantumCircuit` type provides a similar interface to Qiskit's Python API, including most [methods to add standard instructions](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions).  A `QuantumCircuit` object also provides the following properties: `num_qubits`, `num_clbits`, and `num_instructions`.
+
+One crucial difference between this package and the Python API is that in this package, everything is indexed starting with one rather than zero, since that is the norm in Julia.
 
 More usage examples can be found in the `test/` directory.
 
