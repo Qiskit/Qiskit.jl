@@ -61,46 +61,17 @@
         transpile_result = qk_transpile(qc, target)
         op_counts = qk_circuit_count_ops(transpile_result.circuit)
         @test length(op_counts) == 4
-        #=
-    for (uint32_t i = 0 i < op_counts.len i++) {
-        int sx_gate = strcmp(op_counts.data[i].name, "sx")
-        int ecr_gate = strcmp(op_counts.data[i].name, "ecr")
-        int x_gate = strcmp(op_counts.data[i].name, "x")
-        int rz_gate = strcmp(op_counts.data[i].name, "rz")
-        if (sx_gate != 0 && ecr_gate != 0 && x_gate != 0 && rz_gate != 0) {
-            printf("Gate type of %s found in the circuit which isn't expected\n",
-                   op_counts.data[i].name)
-            result = EqualityError
-            goto transpile_cleanup
-        }
-    }
-    QkCircuitInstruction inst
-    for (size_t i = 0 i < qk_circuit_num_instructions(transpile_result.circuit) i++) {
-        qk_circuit_get_instruction(transpile_result.circuit, i, &inst)
-        if (strcmp(inst.name, "ecr") == 0) {
-            if (inst.num_qubits != 2) {
-                printf("Unexpected number of qubits for ecr: %d\n", inst.num_qubits)
-                result = EqualityError
-                qk_circuit_instruction_clear(&inst)
-                goto transpile_cleanup
-            }
-            bool valid = false
-            for (uint32_t qubit = 0 qubit < num_qubits - 1 qubit++) {
-                if (inst.qubits[0] == qubit && inst.qubits[1] == qubit + 1) {
-                    valid = true
-                    break
-                }
-                    }
-                @test valid
-            if (valid == false) {
-                printf("ECR Gate outside target on qubits: {%u, %u}\n", inst.qubits[0],
-                       inst.qubits[1])
-                result = EqualityError
-                qk_circuit_instruction_clear(&inst)
-                goto transpile_cleanup
-            }
-        }
-        }
-        =#
+        op_count_set = Set([name for (name, _) in op_counts])
+        @test op_count_set == Set(["sx", "ecr", "x", "rz"])
+        num_instructions = qk_circuit_num_instructions(transpile_result.circuit)
+        for i in 1:num_instructions
+            inst = qk_circuit_get_instruction(transpile_result.circuit, i)
+            if inst.name == "ecr"
+                @test inst.num_qubits == 2
+                @test inst.qubits[1] ∈ 1:num_qubits
+                @test inst.qubits[2] ∈ 1:num_qubits
+                @test inst.qubits[1] + 1 == inst.qubits[2]
+            end
+        end
     end
 end

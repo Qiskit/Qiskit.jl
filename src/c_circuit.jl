@@ -87,6 +87,18 @@ mutable struct CircuitInstruction
     params::Vector{Float64}
 end
 
+function Base.getproperty(obj::CircuitInstruction, sym::Symbol)
+    if sym === :num_qubits
+        return length(obj.qubits)
+    elseif sym === :num_clbits
+        return length(obj.clbits)
+    elseif sym === :num_params
+        return length(obj.params)
+    else
+        return getfield(obj, sym)
+    end
+end
+
 function check_not_null(qc::Ptr{QkCircuit})::Nothing
     if qc == C_NULL
         throw(ArgumentError("Ptr{QkCircuit} is NULL."))
