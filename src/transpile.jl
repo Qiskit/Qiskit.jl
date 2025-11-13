@@ -16,7 +16,14 @@ mutable struct TranspileLayout
     ptr::Ptr{QkTranspileLayout}
 end
 
-function qk_transpile(qc::QuantumCircuit, target::Target)::Tuple{QuantumCircuit, TranspileLayout}
+struct TranspileResult
+    circuit::QuantumCircuit
+    layout::TranspileLayout
+end
+
+function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
     result_ref = qk_transpile(qc.ptr, target.ptr)
-    return QuantumCircuit(result_ref[].circuit), TranspileLayout(result_ref[].layout)
+    circuit = QuantumCircuit(result_ref[].circuit)
+    layout = TranspileLayout(result_ref[].layout)
+    return TranspileResult(circuit, layout)
 end
