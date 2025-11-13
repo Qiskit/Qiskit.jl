@@ -34,9 +34,9 @@
 
         rz_entry = Qiskit.target_entry_gate(QkGate_RZ)
         for i in 1:num_qubits
-            error = 0.
-                duration = 0.
-                qk_target_entry_add_property(rz_entry, [i], duration, error)
+            error = 0.0
+            duration = 0.0
+            qk_target_entry_add_property(rz_entry, [i], duration, error)
         end
         qk_target_add_instruction(target, rz_entry)
 
@@ -58,22 +58,15 @@
         end
     #QkTranspileOptions options = qk_transpiler_default_options()
     #options.seed = 42
-    #int result_code = qk_transpile(qc, target, &options, &transpile_result, &error)
-        #=
-    if (result_code != 0) {
-        printf("Transpilation failed with: %s\n", error)
-        result = EqualityError
-        qk_str_free(error)
-        goto circuit_cleanup
-    }
-
-    QkOpCounts op_counts = qk_circuit_count_ops(transpile_result.circuit)
+    circuit, layout = qk_transpile(qc, target)
+    #=op_counts = qk_circuit_count_ops(circuit)
     if (op_counts.len != 4) {
         printf("More than 4 types of gates in circuit, circuit's instructions are:\n")
         print_circuit(transpile_result.circuit)
         result = EqualityError
         goto transpile_cleanup
-    }
+    }=#
+        #=
     for (uint32_t i = 0 i < op_counts.len i++) {
         int sx_gate = strcmp(op_counts.data[i].name, "sx")
         int ecr_gate = strcmp(op_counts.data[i].name, "ecr")

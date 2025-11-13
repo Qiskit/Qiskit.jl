@@ -10,3 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import .C: qk_transpile, QkTranspileLayout, QkTranspileResult
+
+mutable struct TranspileLayout
+    ptr::Ptr{QkTranspileLayout}
+end
+
+function qk_transpile(qc::QuantumCircuit, target::Target)::Tuple{QuantumCircuit, TranspileLayout}
+    result_ref = qk_transpile(qc.ptr, target.ptr)
+    return QuantumCircuit(result_ref[].circuit), TranspileLayout(result_ref[].layout)
+end
