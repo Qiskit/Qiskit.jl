@@ -56,16 +56,11 @@
         for i in 1:2:num_qubits-1
             qc.cx(i, num_qubits)
         end
-    #QkTranspileOptions options = qk_transpiler_default_options()
-    #options.seed = 42
-    result = qk_transpile(qc, target)
-    #=op_counts = qk_circuit_count_ops(circuit)
-    if (op_counts.len != 4) {
-        printf("More than 4 types of gates in circuit, circuit's instructions are:\n")
-        print_circuit(transpile_result.circuit)
-        result = EqualityError
-        goto transpile_cleanup
-    }=#
+        #QkTranspileOptions options = qk_transpiler_default_options()
+        #options.seed = 42
+        transpile_result = qk_transpile(qc, target)
+        op_counts = qk_circuit_count_ops(transpile_result.circuit)
+        @test length(op_counts) == 4
         #=
     for (uint32_t i = 0 i < op_counts.len i++) {
         int sx_gate = strcmp(op_counts.data[i].name, "sx")

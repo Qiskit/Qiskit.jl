@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, QkCircuit, QkGate, CircuitInstruction
+import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction
 import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
 using .C
 
@@ -242,5 +242,7 @@ qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool = true)
     qk_circuit_unitary(qc.ptr, matrix, qubits; check_input, offset=qc.offset)
 
 qk_circuit_delay(qc::QuantumCircuit, args...) = qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
+
+qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
 
 export QuantumCircuit, CircuitInstruction
