@@ -28,7 +28,7 @@
         for i in 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
-            qk_target_entry_add_property(sx_entry, [1], duration, error)
+            qk_target_entry_add_property(sx_entry, [i], duration, error)
         end
         qk_target_add_instruction(target, sx_entry)
 
@@ -58,7 +58,7 @@
         end
     #QkTranspileOptions options = qk_transpiler_default_options()
     #options.seed = 42
-    circuit, layout = qk_transpile(qc, target)
+    result = qk_transpile(qc, target)
     #=op_counts = qk_circuit_count_ops(circuit)
     if (op_counts.len != 4) {
         printf("More than 4 types of gates in circuit, circuit's instructions are:\n")
