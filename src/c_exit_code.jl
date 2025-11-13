@@ -34,11 +34,11 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
     end
     if code == QkExitCode_Success
         return
-    elseif code == 100
+    elseif code == QkExitCode_CInputError
         throw(ErrorException("Error related to C data input."))
-    elseif code == 101
+    elseif code == QkExitCode_NullPointerError
         throw(ErrorException("Unexpected null pointer."))
-    elseif code == 102
+    elseif code == QkExitCode_AlignmentError
         throw(ErrorException("Pointer is not aligned to expected data."))
     elseif code == QkExitCode_IndexError
         throw(ErrorException("Index out of bounds."))
