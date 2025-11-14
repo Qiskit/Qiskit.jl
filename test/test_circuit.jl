@@ -24,6 +24,8 @@
     qc.measure(4, 1)
     qc.reset(4)
     @test qc.num_instructions == 8
+    instructions = [instruction.name for instruction in qc.data]
+    @test instructions == ["rz", "h", "xx_plus_yy", "delay", "unitary", "barrier", "measure", "reset"]
     @test qk_circuit_get_instruction(qc, 1).params == [0.25]
     @test qk_circuit_get_instruction(qc, 3).params == [0.3, 0]
     @test qk_circuit_get_instruction(qc, 3).qubits == [2, 3]
@@ -46,6 +48,8 @@
         @test_throws ArgumentError qk_circuit_measure(qc, 4, 0)
         @test_throws ArgumentError qk_circuit_measure(qc, 3, 1)
         @test_throws ArgumentError qk_circuit_reset(qc, 4)
+        instructions = [instruction.name for instruction in qc.data]
+        @test instructions == ["rz", "cx", "unitary", "barrier", "measure", "reset"]
         @test qk_circuit_get_instruction(qc, 0).params == [0.25]
         @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
         @test qk_circuit_get_instruction(qc, 4).clbits == [0]
