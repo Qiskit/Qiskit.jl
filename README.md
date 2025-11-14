@@ -82,7 +82,7 @@ The following features of the Qiskit C API are supported by this wrapper:
 - Construction and manipulation of a `Target`
 - Transpilation, given a circuit and target
 
-Currently the only supported platform is Linux x86_64.  Support for macOS will be added after https://github.com/JuliaPackaging/Yggdrasil/pull/12526 is merged.
+Currently only Linux and macOS are supported, on both x86_64 and aarch64 instruction set architectures.
 
 ## Installation instructions
 
