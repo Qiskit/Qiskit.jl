@@ -58,7 +58,7 @@
         end
         #QkTranspileOptions options = qk_transpiler_default_options()
         #options.seed = 42
-        transpile_result = qk_transpile(qc, target)
+        transpile_result = transpile(qc, target)
         op_counts = qk_circuit_count_ops(transpile_result.circuit)
         @test length(op_counts) == 4
         op_count_set = Set([name for (name, _) in op_counts])

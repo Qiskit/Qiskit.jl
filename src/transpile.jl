@@ -27,3 +27,8 @@ function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
     layout = TranspileLayout(result_ref[].layout)
     return TranspileResult(circuit, layout)
 end
+
+transpile(qc::QuantumCircuit, target::Target)::TranspileResult =
+    qk_transpile(qc, target)
+
+export TranspileLayout, TranspileResult, transpile
