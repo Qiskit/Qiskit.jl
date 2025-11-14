@@ -32,10 +32,14 @@ jobs:
           - x64
         include:
           - os: ubuntu-latest-arm
-        include:
+            arch: aarch64
+            version: '1.10'
           - os: macos-13
-        include:
+            arch: x64
+            version: '1.10'
           - os: ubuntu-latest-arm
+            arch: aarch64
+            version: '1.10'
     steps:
       - uses: actions/checkout@v5
       - uses: julia-actions/setup-julia@v2
