@@ -37,7 +37,7 @@ jobs:
           - os: macos-13
             arch: x64
             version: '1.10'
-          - os: ubuntu-latest-arm
+          - os: macos-latest
             arch: aarch64
             version: '1.10'
     steps:
