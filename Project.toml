@@ -9,12 +9,12 @@ Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 Qiskit_jll = "b54e8e98-f244-53b3-a8e8-4727a4907f76"
 
 [compat]
-julia = "1.10"
-Libdl = "1"
-Compat = "3.47"
-Qiskit_jll = "~2.2.3"
 Aqua = "0.8.14"
+Compat = "3.47, 4"
+Libdl = "1"
+Qiskit_jll = "~2.2.3"
 Test = "1"
+julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
