@@ -87,6 +87,18 @@ mutable struct CircuitInstruction
     params::Vector{Float64}
 end
 
+function Base.getproperty(obj::CircuitInstruction, sym::Symbol)
+    if sym === :num_qubits
+        return length(obj.qubits)
+    elseif sym === :num_clbits
+        return length(obj.clbits)
+    elseif sym === :num_params
+        return length(obj.params)
+    else
+        return getfield(obj, sym)
+    end
+end
+
 function check_not_null(qc::Ptr{QkCircuit})::Nothing
     if qc == C_NULL
         throw(ArgumentError("Ptr{QkCircuit} is NULL."))
@@ -229,8 +241,29 @@ function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, un
     nothing
 end
 
+mutable struct QkOpCount
+    name::Ptr{Cchar}
+    count::Csize_t
+end
+
+struct QkOpCounts
+    data::Ptr{QkOpCount}
+    len::Csize_t
+end
+
+function qk_circuit_count_ops(qc::Ref{QkCircuit})
+    opcounts = @ccall libqiskit.qk_circuit_count_ops(qc::Ref{QkCircuit})::QkOpCounts
+    retval = Tuple{String, Int}[]
+    sizehint!(retval, opcounts.len)
+    for i in 1:opcounts.len
+        op_count = unsafe_load(opcounts.data, i)
+        push!(retval, (unsafe_string(op_count.name), op_count.count))
+    end
+    return retval
+end
+
 export QkGate, QkCircuit, QkDelayUnit
-export qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction
+export qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops
 export qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay
 
 # Export enum instances

@@ -19,4 +19,15 @@ end
 mutable struct QkTranspileResult
     circuit::Ptr{QkCircuit}
     layout::Ptr{QkTranspileLayout}
+    QkTranspileResult() = new(C_NULL, C_NULL)
 end
+
+function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult}
+    result = QkTranspileResult()
+    error_string = Ptr{Cchar}(C_NULL)
+    exit_code = @ccall libqiskit.qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget}, C_NULL::Ptr{QkTranspileOptions}, result::Ref{QkTranspileResult}, error_string::Ref{Ptr{Cchar}})::QkExitCode
+    check_exit_code(exit_code, error_string)
+    return Ref(result)
+end
+
+export qk_transpile

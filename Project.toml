@@ -1,7 +1,7 @@
 name = "Qiskit"
 uuid = "91d9a17d-f964-4b6c-a3c4-2f4cfdea2c95"
-version = "0.2.0"
 authors = ["Jim Garrison <garrison@ibm.com> and contributors"]
+version = "0.3.0"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"

@@ -51,6 +51,10 @@ qk_target_entry_num_properties(obj::TargetEntry)::Int = qk_target_entry_num_prop
 
 qk_target_entry_add_property(target_entry::TargetEntry, args...) = qk_target_entry_add_property(target_entry.ptr, args...)
 
+function Base.propertynames(obj::TargetEntry; private::Bool = false)
+    union(fieldnames(typeof(obj)), (:num_properties,))
+end
+
 function Base.getproperty(obj::TargetEntry, sym::Symbol)
     if sym === :num_properties
         return qk_target_entry_num_properties(obj)
@@ -91,16 +95,34 @@ qk_target_num_qubits(obj::Target) =
 qk_target_num_instructions(obj::Target) =
     qk_target_num_instructions(obj.ptr)
 
+#qk_target_dt
+
+#qk_target_granularity
+
+#qk_target_[...]
+
+function Base.propertynames(obj::Target; private::Bool = false)
+    union(fieldnames(typeof(obj)), (:num_qubits, :num_instructions, :dt, :granularity, :min_length, :pulse_alignment, :acquire_alignment))
+end
+
+# Base.setproperty!
+
+function Base.getproperty(obj::Target, sym::Symbol)
+    if sym === :num_qubits
+        return qk_target_num_qubits(obj)
+    elseif sym === :num_instructions
+        return qk_target_num_instructions(obj)
+    else
+        return getfield(obj, sym)
+    end
+end
+
 function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
     qk_target_add_instruction(target.ptr, entry.ptr)
     entry.ptr = C_NULL
     nothing
 end
 
-#qk_target_dt
-
-#qk_target_granularity
-
-#qk_target_[...]
+#qk_target_update_property
 
 @compat public Target, target_entry_gate, target_entry_fixed, target_entry_measure, target_entry_reset

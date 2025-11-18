@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, QkCircuit, QkGate, CircuitInstruction
+import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction
 import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
 using .C
 
@@ -104,12 +104,46 @@ function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit
     qk_circuit_unitary(cl.qc, matrix, qubits)
 end
 
+struct QuantumCircuitData <: AbstractVector{CircuitInstruction}
+    circuit::QuantumCircuit
+end
+
+Base.IndexStyle(::Type{QuantumCircuitData}) = IndexLinear()
+Base.size(qcdata::QuantumCircuitData) = (qcdata.circuit.num_instructions,)
+Base.firstindex(qcdata::QuantumCircuitData) = qcdata.circuit.offset
+Base.lastindex(qcdata::QuantumCircuitData) = firstindex(qcdata) + qcdata.circuit.num_instructions - 1
+
+function Base.getindex(qcdata::QuantumCircuitData, i::Integer)
+    @boundscheck checkbounds(qcdata, i - qcdata.circuit.offset + 1)
+    qk_circuit_get_instruction(qcdata.circuit, i)
+end
+
+function Base.iterate(qcdata::QuantumCircuitData)
+    if isempty(qcdata)
+        return nothing
+    else
+        i = firstindex(qcdata)
+        return (qcdata[i], i + 1)
+    end
+end
+
+function Base.iterate(qcdata::QuantumCircuitData, state)
+    qc = qcdata.circuit
+    if state >= qc.num_instructions + qc.offset
+        return nothing
+    else
+        return (qcdata[state], state + 1)
+    end
+end
+
 function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
-    union(fieldnames(typeof(obj)), (:num_qubits, :num_clbits, :num_instructions, :reset, :measure, :barrier, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
+    union(fieldnames(typeof(obj)), (:data, :num_qubits, :num_clbits, :num_instructions, :reset, :measure, :barrier, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
 end
 
 function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
-    if sym === :num_qubits
+    if sym === :data
+        return QuantumCircuitData(qc)
+    elseif sym === :num_qubits
         return qk_circuit_num_qubits(qc)
     elseif sym === :num_clbits
         return qk_circuit_num_clbits(qc)
@@ -243,4 +277,7 @@ qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool = true)
 
 qk_circuit_delay(qc::QuantumCircuit, args...) = qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
 
+qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
+
 export QuantumCircuit, CircuitInstruction
+@compat public QuantumCircuitData
