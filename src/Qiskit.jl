@@ -16,6 +16,9 @@ using Compat
 
 module C
 
+libdir = joinpath(@__DIR__, "..", "lib")
+include(joinpath(libdir, "LibQiskit.jl"))
+
 using Qiskit_jll
 
 libqiskit = Qiskit_jll.libqiskit

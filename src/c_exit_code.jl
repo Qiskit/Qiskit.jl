@@ -10,23 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-@enum QkExitCode::UInt32 begin
-    QkExitCode_Success = 0
-    QkExitCode_CInputError = 100
-    QkExitCode_NullPointerError = 101
-    QkExitCode_AlignmentError = 102
-    QkExitCode_IndexError = 103
-    QkExitCode_DuplicateIndexError = 104
-    QkExitCode_ArithmeticError = 200
-    QkExitCode_MismatchedQubits = 201
-    QkExitCode_ExpectedUnitary = 202
-    QkExitCode_TargetError = 300
-    QkExitCode_TargetInstAlreadyExists = 301
-    QkExitCode_TargetQargMismatch = 302
-    QkExitCode_TargetInvalidQargsKey = 303
-    QkExitCode_TargetInvalidInstKey = 304
-    QkExitCode_TranspilerError = 400
-end
+import .LibQiskit: QkExitCode
 
 function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
     if error_string != C_NULL
@@ -64,5 +48,15 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
         throw(ErrorException("Transpilation failed."))
     else
         throw(ErrorException("Unrecognized error code from Qiskit: $code"))
+    end
+end
+
+export QkExitCode
+
+# Export enum instances
+for e in (QkExitCode,)
+    for s in instances(e)
+        @eval import .LibQiskit: $(Symbol(s))
+        @eval export $(Symbol(s))
     end
 end

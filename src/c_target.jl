@@ -10,8 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-mutable struct QkTargetEntry
-end
+import .LibQiskit: QkTargetEntry, QkTarget
 
 function check_not_null(obj::Ptr{QkTargetEntry})::Nothing
     if obj == C_NULL
@@ -32,9 +31,6 @@ end
 function qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
     qubits0 = Vector{UInt32}(qubits .- 1)
     check_exit_code(@ccall(libqiskit.qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits0::Ref{UInt32}, length(qubits0)::UInt32, duration::Cdouble, error::Cdouble)::QkExitCode))
-end
-
-mutable struct QkTarget
 end
 
 function check_not_null(obj::Ptr{QkTarget})::Nothing

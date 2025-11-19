@@ -10,23 +10,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-@enum QkBitTerm::UInt8 begin
-    QkBitTerm_X = 0b0010
-    QkBitTerm_Y = 0b0011
-    QkBitTerm_Z = 0b0001
-    QkBitTerm_Plus = 0b1010
-    QkBitTerm_Minus = 0b0110
-    QkBitTerm_Right = 0b1011
-    QkBitTerm_Left = 0b0111
-    QkBitTerm_Zero = 0b1001
-    QkBitTerm_One = 0b0101
-end
+import .LibQiskit: QkBitTerm, QkObs
 
 function qk_bitterm_label(bit_term::QkBitTerm)::Char
     @ccall libqiskit.qk_bitterm_label(bit_term::UInt8)::UInt8
-end
-
-mutable struct QkObs
 end
 
 function qk_obs_free(obs::Ptr{QkObs})
@@ -55,6 +42,7 @@ export QkBitTerm, qk_bitterm_label, QkObs, qk_obs_free, qk_obs_zero, qk_obs_num_
 # Export enum instances
 for e in (QkBitTerm,)
     for s in instances(e)
+        @eval import .LibQiskit: $(Symbol(s))
         @eval export $(Symbol(s))
     end
 end

@@ -10,63 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-@enum QkGate::UInt8 begin
-    QkGate_GlobalPhase = 0
-    QkGate_H = 1
-    QkGate_I = 2
-    QkGate_X = 3
-    QkGate_Y = 4
-    QkGate_Z = 5
-    QkGate_Phase = 6
-    QkGate_R = 7
-    QkGate_RX = 8
-    QkGate_RY = 9
-    QkGate_RZ = 10
-    QkGate_S = 11
-    QkGate_Sdg = 12
-    QkGate_SX = 13
-    QkGate_SXdg = 14
-    QkGate_T = 15
-    QkGate_Tdg = 16
-    QkGate_U = 17
-    QkGate_U1 = 18
-    QkGate_U2 = 19
-    QkGate_U3 = 20
-    QkGate_CH = 21
-    QkGate_CX = 22
-    QkGate_CY = 23
-    QkGate_CZ = 24
-    QkGate_DCX = 25
-    QkGate_ECR = 26
-    QkGate_Swap = 27
-    QkGate_ISwap = 28
-    QkGate_CPhase = 29
-    QkGate_CRX = 30
-    QkGate_CRY = 31
-    QkGate_CRZ = 32
-    QkGate_CS = 33
-    QkGate_CSdg = 34
-    QkGate_CSX = 35
-    QkGate_CU = 36
-    QkGate_CU1 = 37
-    QkGate_CU3 = 38
-    QkGate_RXX = 39
-    QkGate_RYY = 40
-    QkGate_RZZ = 41
-    QkGate_RZX = 42
-    QkGate_XXMinusYY = 43
-    QkGate_XXPlusYY = 44
-    QkGate_CCX = 45
-    QkGate_CCZ = 46
-    QkGate_CSwap = 47
-    QkGate_RCCX = 48
-    QkGate_C3X = 49
-    QkGate_C3SX = 50
-    QkGate_RC3X = 51
-end
-
-mutable struct QkCircuit
-end
+import .LibQiskit: QkGate, QkCircuit, QkDelayUnit, QkOpCount, QkOpCounts
 
 mutable struct QkCircuitInstruction
     name::Cstring
@@ -220,14 +164,6 @@ function qk_circuit_unitary(qc::Ref{QkCircuit}, matrix::AbstractMatrix{<:Number}
     check_exit_code(@ccall libqiskit.qk_circuit_unitary(qc::Ref{QkCircuit}, row_major_matrix::Ref{Complex{Cdouble}}, qubits0::Ref{UInt32}, length(qubits)::UInt32, check_input::Cuchar)::QkExitCode)
 end
 
-@enum QkDelayUnit::UInt8 begin
-    QkDelayUnit_S = 0
-    QkDelayUnit_MS = 1
-    QkDelayUnit_US = 2
-    QkDelayUnit_NS = 3
-    QkDelayUnit_PS = 4
-end
-
 function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, unit::QkDelayUnit; offset::Int = 1)::Nothing
     check_not_null(qc)
     if !(duration >= 0)
@@ -239,16 +175,6 @@ function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, un
     qubit0 = qubit - offset
     check_exit_code(@ccall libqiskit.qk_circuit_delay(qc::Ref{QkCircuit}, qubit0::UInt32, duration::Float64, unit::UInt8)::QkExitCode)
     nothing
-end
-
-mutable struct QkOpCount
-    name::Ptr{Cchar}
-    count::Csize_t
-end
-
-struct QkOpCounts
-    data::Ptr{QkOpCount}
-    len::Csize_t
 end
 
 function qk_circuit_count_ops(qc::Ref{QkCircuit})
@@ -269,6 +195,7 @@ export qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier
 # Export enum instances
 for e in (QkGate, QkDelayUnit)
     for s in instances(e)
+        @eval import .LibQiskit: $(Symbol(s))
         @eval export $(Symbol(s))
     end
 end
