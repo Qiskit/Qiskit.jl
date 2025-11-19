@@ -1,0 +1,7 @@
+[general]
+library_name = "libqiskit"
+output_file_path = "./LibQiskit.jl"
+module_name = "LibQiskit"
+jll_pkg_name = "Qiskit_jll"
+export_symbol_prefixes = ["Qk", "qk_", "QISKIT_"]
+output_ignorelist = ["QISKIT_VERSION_HEX"]

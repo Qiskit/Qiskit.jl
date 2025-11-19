@@ -6,11 +6,13 @@ version = "0.3.0"
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 Qiskit_jll = "b54e8e98-f244-53b3-a8e8-4727a4907f76"
 
 [compat]
 Aqua = "0.8.14"
 Compat = "3.47, 4"
+CEnum = "0.5"
 Libdl = "1"
 Qiskit_jll = "~2.2.3"
 Test = "1"
