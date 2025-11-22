@@ -97,13 +97,6 @@ cargo install juliaup
 juliaup add release
 ```
 
-### Clone this repository
-
-```sh
-git clone git@github.com:Qiskit/Qiskit.jl.git
-cd Qiskit.jl
-```
-
 ### Install `Qiskit.jl`
 
 #### Latest stable release
