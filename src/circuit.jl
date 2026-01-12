@@ -21,12 +21,14 @@ mutable struct QuantumCircuit
         num_qubits >= 0 || throw(ArgumentError("Number of qubits must be non-negative."))
         num_clbits >= 0 || throw(ArgumentError("Number of clbits must be non-negative."))
         qc = new(@ccall(libqiskit.qk_circuit_new(num_qubits::UInt32, num_clbits::UInt32)::Ptr{QkCircuit}), offset)
+        # Take ownership; it's our job to free it eventually
         finalizer(qk_circuit_free, qc)
         qc
     end
-    function QuantumCircuit(src::Ref{QkCircuit}; offset::Int = 1)
-        check_not_null(src)
-        qc = new(@ccall(libqiskit.qk_circuit_copy(src::Ref{QkCircuit})::Ptr{QkCircuit}), offset)
+    function QuantumCircuit(ptr::Ptr{QkCircuit}; offset::Int = 1)
+        check_not_null(ptr)
+        qc = new(ptr, offset)
+        # Take ownership; it's our job to free it eventually
         finalizer(qk_circuit_free, qc)
         qc
     end
@@ -40,7 +42,11 @@ function qk_circuit_free(qc::QuantumCircuit)::Nothing
     nothing
 end
 
-Base.copy(qc::QuantumCircuit)::QuantumCircuit = QuantumCircuit(qc.ptr; offset=qc.offset)
+function Base.copy(qc::QuantumCircuit)::QuantumCircuit
+    check_not_null(qc.ptr)
+    ptr = @ccall(libqiskit.qk_circuit_copy(qc.ptr::Ref{QkCircuit})::Ptr{QkCircuit})
+    QuantumCircuit(ptr; offset=qc.offset)
+end
 
 qk_circuit_num_qubits(qc::QuantumCircuit)::Int = qk_circuit_num_qubits(qc.ptr)
 
