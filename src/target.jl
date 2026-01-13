@@ -68,12 +68,14 @@ mutable struct Target
     function Target(num_qubits::Integer)
         num_qubits >= 0 || throw(ArgumentError("num_qubits must be non-negative."))
         target = new(@ccall(libqiskit.qk_target_new(num_qubits::UInt32)::Ptr{QkTarget}))
+        # Take ownership; it's our job to free it eventually
         finalizer(qk_target_free, target)
         target
     end
-    function Target(src::Ref{QkTarget})
-        check_not_null(src)
-        target = new(@ccall(libqiskit.qk_target_copy(src::Ref{QkTarget})::Ptr{QkTarget}))
+    function Target(ptr::Ptr{QkTarget})
+        check_not_null(ptr)
+        target = new(ptr)
+        # Take ownership; it's our job to free it eventually
         finalizer(qk_target_free, target)
         target
     end
@@ -87,7 +89,10 @@ function qk_target_free(obj::Target)::Nothing
     nothing
 end
 
-Base.copy(obj::Target)::Target = Target(obj.ptr)
+function Base.copy(obj::Target)::Target
+    check_not_null(obj.ptr)
+    Target(@ccall(libqiskit.qk_target_copy(obj.ptr::Ref{QkTarget})::Ptr{QkTarget}))
+end
 
 qk_target_num_qubits(obj::Target) =
     qk_target_num_qubits(obj.ptr)
