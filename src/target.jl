@@ -13,6 +13,15 @@
 import .C: QkTargetEntry, qk_target_entry_free, qk_target_entry_num_properties, qk_target_entry_add_property
 import .C: QkTarget, qk_target_free, qk_target_add_instruction
 
+"""
+    TargetEntry
+
+A mapping of qubit arguments and properties representing gate map of the `Target`.
+
+Available properties:
+
+- `num_properties`
+"""
 mutable struct TargetEntry
     ptr::Ptr{QkTargetEntry}
     function TargetEntry(entry::Ptr{QkTargetEntry})
@@ -63,8 +72,24 @@ function Base.getproperty(obj::TargetEntry, sym::Symbol)
     end
 end
 
+"""
+    Target
+
+A mapping of instructions and properties representing the particular
+constraints of a backend. Its purpose is to provide the compiler with
+information that allows it to compile an input circuit into another that is
+optimized taking in consideration the `Target`'s specifications.
+
+Available properties:
+
+- `num_qubits`
+- `num_instructions`
+"""
 mutable struct Target
     ptr::Ptr{QkTarget}
+    @doc"""
+         Target(num_qubits)
+    """
     function Target(num_qubits::Integer)
         num_qubits >= 0 || throw(ArgumentError("num_qubits must be non-negative."))
         target = new(@ccall(libqiskit.qk_target_new(num_qubits::UInt32)::Ptr{QkTarget}))
