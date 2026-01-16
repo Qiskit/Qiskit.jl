@@ -1,0 +1,8 @@
+[general]
+library_name = "libqiskit_ibm_runtime"
+output_file_path = "./LibQiskitIBMRuntime.jl"
+module_name = "LibQiskitIBMRuntime"
+jll_pkg_name = "qiskit_ibm_runtime_jll"
+export_symbol_prefixes = ["qkrt_"]
+output_ignorelist = ["^qk__.*", "^QISKIT_.*", "^Qk.*"]
+prologue_file_path = "./prologue.jl"
