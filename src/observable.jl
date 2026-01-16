@@ -12,8 +12,19 @@
 
 import .C: qk_obs_free, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_zero, qk_obs_len, QkObs
 
+"""
+    SparseObservable
+
+Qiskit observable.  This is a wrapper of `QkObs`, which is similar to
+`SparseObservable` in Python.
+"""
 mutable struct SparseObservable
     ptr::Ptr{QkObs}
+    @doc"""
+        SparseObservable(n::Integer)
+
+    Construct an empty `SparseObservable` on `n` qubits.
+    """
     function SparseObservable(n::Integer)
         obs = new(qk_obs_zero(n))
         finalizer(qk_obs_free, obs)
@@ -36,17 +47,17 @@ function qk_obs_free(obs::SparseObservable)::Nothing
     nothing
 end
 
-function qk_obs_num_terms(obs::SparseObservable)
+function qk_obs_num_terms(obs::SparseObservable)::Int
     check_not_null(obs.ptr)
     qk_obs_num_terms(obs.ptr)
 end
 
-function qk_obs_num_qubits(obs::SparseObservable)
+function qk_obs_num_qubits(obs::SparseObservable)::Int
     check_not_null(obs.ptr)
     qk_obs_num_qubits(obs.ptr)
 end
 
-function qk_obs_len(obs::SparseObservable)
+function qk_obs_len(obs::SparseObservable)::Int
     check_not_null(obs.ptr)
     qk_obs_len(obs.ptr)
 end

@@ -14,6 +14,26 @@ import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_cir
 import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
 using .C
 
+"""
+    QuantumCircuit
+
+Quantum circuit representation.
+
+Available read-only properties:
+
+- `num_qubits`
+- `num_clbits`
+- `num_instructions`
+- `data` - contains instruction list
+
+The additional properties are methods:
+
+- `reset(qubit)`
+- `measure(qubit, clbit)`
+- `barrier(qubit1, qubit2, ...)`
+- `unitary(matrix, [qubit1, qubit2, ...])`
+- many standard gates corresponding to Qiskit's Python API
+"""
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
     offset::Int
