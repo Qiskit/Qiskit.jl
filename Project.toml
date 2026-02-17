@@ -14,7 +14,7 @@ Aqua = "0.8.14"
 Compat = "3.47, 4"
 CEnum = "0.5"
 Libdl = "1"
-Qiskit_jll = "~2.2.3"
+Qiskit_jll = "~2.2.3, 2.3"
 Test = "1"
 julia = "1.10"
 
