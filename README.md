@@ -7,7 +7,11 @@
 [![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.html)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Julia wrapper of [Qiskit's C API](https://docs.quantum.ibm.com/api/qiskit-c)
+This package contains a [Julia](https://julialang.org/) wrapper of the [Qiskit C API](https://docs.quantum.ibm.com/api/qiskit-c).
+
+If Julia is already installed, then this package can be installed in one step, by typing `] add Qiskit` at the Julia REPL.
+
+Supported operating systems: macOS and Linux.
 
 ## Example
 
