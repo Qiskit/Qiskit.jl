@@ -15,6 +15,8 @@ Supported operating systems: macOS and Linux.
 
 ## Example
 
+The following example generates a circuit that constructs a [Bell state](https://en.wikipedia.org/wiki/Bell_state), specifies a synthetic hardware device, and transpiles the circuit to run on that hardware device.  To transpile to and run on an actual hardware backend, see the [more succinct example](https://github.com/Qiskit/QiskitIBMRuntimeC.jl?tab=readme-ov-file#example) in the [QiskitIBMRuntimeC.jl](https://github.com/Qiskit/QiskitIBMRuntimeC.jl) README.
+
 ```julia
 using Qiskit
 using Qiskit.C # lower-level C API functions
