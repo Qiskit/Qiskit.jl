@@ -32,7 +32,7 @@ The additional properties are methods:
 - `measure(qubit, clbit)`
 - `barrier(qubit1, qubit2, ...)`
 - `unitary(matrix, [qubit1, qubit2, ...])`
-- many standard gates corresponding to Qiskit's Python API
+- many [standard gates](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions) corresponding to Qiskit's Python API
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
