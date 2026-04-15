@@ -26,6 +26,18 @@
     @test qc.num_instructions == 8
     instructions = [instruction.name for instruction in qc.data]
     @test instructions == ["rz", "h", "xx_plus_yy", "delay", "unitary", "barrier", "measure", "reset"]
+    expected_op_counts = Dict(
+        "rz" => 1,
+        "h" => 1,
+        "xx_plus_yy" => 1,
+        "delay" => 1,
+        "unitary" => 1,
+        "barrier" => 1,
+        "measure" => 1,
+        "reset" => 1,
+    )
+    @test Dict(qk_circuit_count_ops(qc)) == expected_op_counts
+    @test Dict(qc.count_ops) == expected_op_counts
     @test qk_circuit_get_instruction(qc, 1).params == [0.25]
     @test qk_circuit_get_instruction(qc, 3).params == [0.3, 0]
     @test qk_circuit_get_instruction(qc, 3).qubits == [2, 3]

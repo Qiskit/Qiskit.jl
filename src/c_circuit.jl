@@ -178,12 +178,17 @@ function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, un
 end
 
 function qk_circuit_count_ops(qc::Ref{QkCircuit})
-    opcounts = @ccall libqiskit.qk_circuit_count_ops(qc::Ref{QkCircuit})::QkOpCounts
+    check_not_null(qc)
+    opcounts = Ref(@ccall libqiskit.qk_circuit_count_ops(qc::Ref{QkCircuit})::QkOpCounts)
     retval = Tuple{String, Int}[]
-    sizehint!(retval, opcounts.len)
-    for i in 1:opcounts.len
-        op_count = unsafe_load(opcounts.data, i)
-        push!(retval, (unsafe_string(op_count.name), op_count.count))
+    try
+        sizehint!(retval, opcounts[].len)
+        for i in 1:opcounts[].len
+            op_count = unsafe_load(opcounts[].data, i)
+            push!(retval, (unsafe_string(op_count.name), op_count.count))
+        end
+    finally
+        @ccall libqiskit.qk_opcounts_clear(opcounts::Ref{QkOpCounts})::Cvoid
     end
     return retval
 end
