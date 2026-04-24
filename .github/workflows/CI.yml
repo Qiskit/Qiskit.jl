@@ -51,6 +51,7 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: coverallsapp/github-action@v2
+        if: runner.os == 'Linux'
         with:
           files: lcov.info
   docs:
