@@ -322,5 +322,7 @@ qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool = true)
 
 qk_circuit_delay(qc::QuantumCircuit, args...) = qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
 
+qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
+
 export QuantumCircuit, CircuitInstruction
 @compat public QuantumCircuitData
