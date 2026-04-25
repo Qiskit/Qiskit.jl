@@ -36,8 +36,8 @@
         "measure" => 1,
         "reset" => 1,
     )
-    @test Dict(qk_circuit_count_ops(qc)) == expected_op_counts
-    @test Dict(qc.count_ops) == expected_op_counts
+    @test qk_circuit_count_ops(qc) == expected_op_counts
+    @test qc.count_ops() == expected_op_counts
     @test qk_circuit_get_instruction(qc, 1).params == [0.25]
     @test qk_circuit_get_instruction(qc, 3).params == [0.3, 0]
     @test qk_circuit_get_instruction(qc, 3).qubits == [2, 3]
