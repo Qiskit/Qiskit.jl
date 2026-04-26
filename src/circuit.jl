@@ -136,7 +136,7 @@ struct CountOpsClosure
 end
 
 """
-    count_ops() -> Dict
+    count_ops() -> Dict{String, Int}
 
 Return operation counts for the circuit.
 
