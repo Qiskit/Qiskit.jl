@@ -28,7 +28,7 @@ Available read-only properties:
 
 The additional properties are methods:
 
-- `count_ops()` - returns a Dict of operation counts
+- `count_ops()` - returns a `Dict` of operation counts
 - `reset(qubit)`
 - `measure(qubit, clbit)`
 - `barrier(qubit1, qubit2, ...)`
