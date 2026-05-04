@@ -69,9 +69,10 @@ jobs:
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-downgrade-compat@v2
         with:
-          mode: deps
+          mode: forcedeps
           julia_version: '1.10'
-          skip: 'Qiskit_jll'
+          skip: 'Libdl,Test'
+          projects: '.'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
