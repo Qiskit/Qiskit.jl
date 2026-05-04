@@ -67,11 +67,15 @@ jobs:
         with:
           version: '1.10'
       - uses: julia-actions/cache@v3
+      - name: Resolve dependencies
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.resolve()
       - uses: julia-actions/julia-downgrade-compat@v2
         with:
-          mode: forcedeps
+          mode: alldeps
           julia_version: '1.10'
-          skip: 'Libdl,Test'
           projects: '.'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
