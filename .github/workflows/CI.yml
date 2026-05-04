@@ -72,7 +72,11 @@ jobs:
         run: |
           using Pkg
           Pkg.resolve()
+      # NOTE: Qiskit_jll ~2.2.3 has a transitive dependency on LibMPDec_jll which is not
+      # available in the General registry. This causes the resolver to fail. When Qiskit_jll
+      # is updated to a version without this dependency, this step should succeed.
       - uses: julia-actions/julia-downgrade-compat@v2
+        continue-on-error: true
         with:
           mode: alldeps
           julia_version: '1.10'
