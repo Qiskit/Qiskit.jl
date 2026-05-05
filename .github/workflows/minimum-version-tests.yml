@@ -50,6 +50,22 @@ jobs:
         run: |
           using Pkg
           Pkg.status(; mode=Pkg.PKGMODE_MANIFEST)
+      - name: Assert minimum dependency versions
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+
+          expected = Dict(
+              "Compat" => v"3.47.0",
+              "CEnum" => v"0.5.0",
+              "Qiskit_jll" => v"2.2.3",
+          )
+
+          deps = Pkg.dependencies()
+          for (name, minimum_version) in expected
+              package = only(filter(dep -> dep.name == name, values(deps)))
+              @assert package.version == minimum_version "$name resolved to $(package.version), expected $minimum_version"
+          end
       - uses: julia-actions/julia-buildpkg@v1
       - name: Test package
         shell: julia --project=. --color=yes {0}
