@@ -82,8 +82,6 @@ jobs:
         with:
           mode: forcedeps
           julia_version: '1.10'
-          skip: 'Libdl,Test'
-          projects: '.'
       - name: Show resolved package versions
         shell: julia --color=yes {0}
         run: |
