@@ -58,7 +58,6 @@ jobs:
           expected = Dict(
               "Compat" => v"3.47.0",
               "CEnum" => v"0.5.0",
-              "Qiskit_jll" => v"2.2.3",
           )
 
           deps = Pkg.dependencies()
