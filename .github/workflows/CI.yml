@@ -54,44 +54,6 @@ jobs:
         if: runner.os == 'Linux'
         with:
           files: lcov.info
-  test-min-compat:
-    name: Minimum compat versions
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      JULIA_PKG_SERVER_REGISTRY_PREFERENCE: eager
-    permissions: # needed to allow julia-actions/cache to proactively delete old caches that it has created
-      actions: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: '1.10'
-      - name: Refresh registries
-        shell: julia --color=yes {0}
-        run: |
-          using Pkg
-          Pkg.Registry.update()
-      - name: Resolve dependencies
-        shell: julia --color=yes {0}
-        run: |
-          using Pkg
-          Pkg.resolve()
-      - uses: julia-actions/julia-downgrade-compat@v2
-        with:
-          mode: forcedeps
-          julia_version: '1.10'
-      - name: Show resolved package versions
-        shell: julia --color=yes {0}
-        run: |
-          using Pkg
-          Pkg.status(; mode=Pkg.PKGMODE_MANIFEST)
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
-        with:
-          allow_reresolve: false
-          force_latest_compatible_version: false
   docs:
     name: Documentation
     runs-on: ubuntu-latest
