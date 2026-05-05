@@ -13,4 +13,43 @@
 @testset "Target" begin
     target = Qiskit.Target(4)
     target2 = copy(target)
+
+    @testset "Base.show method for Target" begin
+        io = IOBuffer()
+        show(io, target)
+        output = String(take!(io))
+        @test contains(output, "Target")
+        @test contains(output, "num_qubits=4")
+        @test contains(output, "num_instructions=0")
+
+        # Test with different qubit count
+        target10 = Qiskit.Target(10)
+        io = IOBuffer()
+        show(io, target10)
+        output = String(take!(io))
+        @test contains(output, "num_qubits=10")
+    end
+
+    @testset "Base.show method for TargetEntry" begin
+        entry = Qiskit.target_entry_gate(QkGate_X)
+        io = IOBuffer()
+        show(io, entry)
+        output = String(take!(io))
+        @test contains(output, "TargetEntry")
+        @test contains(output, "num_properties=")
+
+        # Test measure entry
+        measure_entry = Qiskit.target_entry_measure()
+        io = IOBuffer()
+        show(io, measure_entry)
+        output = String(take!(io))
+        @test contains(output, "TargetEntry")
+
+        # Test reset entry
+        reset_entry = Qiskit.target_entry_reset()
+        io = IOBuffer()
+        show(io, reset_entry)
+        output = String(take!(io))
+        @test contains(output, "TargetEntry")
+    end
 end

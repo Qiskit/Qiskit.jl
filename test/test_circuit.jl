@@ -66,4 +66,30 @@
         @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
         @test qk_circuit_get_instruction(qc, 4).clbits == [0]
     end
+
+    @testset "Base.show method" begin
+        qc = QuantumCircuit(2, 1)
+        io = IOBuffer()
+        show(io, qc)
+        output = String(take!(io))
+        @test contains(output, "QuantumCircuit")
+        @test contains(output, "num_qubits=2")
+        @test contains(output, "num_clbits=1")
+        @test contains(output, "num_instructions=0")
+
+        # Test with instructions
+        qc.h(1)
+        io = IOBuffer()
+        show(io, qc)
+        output = String(take!(io))
+        @test contains(output, "num_instructions=1")
+
+        # Test with empty circuit (offset=0)
+        qc_zero = QuantumCircuit(3, 0, offset=0)
+        io = IOBuffer()
+        show(io, qc_zero)
+        output = String(take!(io))
+        @test contains(output, "QuantumCircuit")
+        @test contains(output, "num_qubits=3")
+    end
 end

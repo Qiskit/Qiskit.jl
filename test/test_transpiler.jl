@@ -74,4 +74,37 @@
             end
         end
     end
+
+    @testset "Base.show method for TranspileLayout and TranspileResult" begin
+        num_qubits = 5
+        target = Qiskit.Target(num_qubits)
+        
+        # Add some gates to target
+        x_entry = Qiskit.target_entry_gate(QkGate_X)
+        for i in 1:num_qubits
+            qk_target_entry_add_property(x_entry, [i], 1.8e-9, 0.8e-6)
+        end
+        qk_target_add_instruction(target, x_entry)
+
+        # Create and transpile circuit
+        qc = QuantumCircuit(num_qubits)
+        qc.h(1)
+        qc.x(2)
+
+        result = transpile(qc, target)
+
+        # Test TranspileLayout show
+        io = IOBuffer()
+        show(io, result.layout)
+        output = String(take!(io))
+        @test contains(output, "TranspileLayout")
+
+        # Test TranspileResult show
+        io = IOBuffer()
+        show(io, result)
+        output = String(take!(io))
+        @test contains(output, "TranspileResult")
+        @test contains(output, "circuit")
+        @test contains(output, "layout")
+    end
 end
