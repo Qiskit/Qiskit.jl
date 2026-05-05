@@ -58,6 +58,8 @@ jobs:
     name: Minimum compat versions
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      JULIA_PKG_SERVER_REGISTRY_PREFERENCE: eager
     permissions: # needed to allow julia-actions/cache to proactively delete old caches that it has created
       actions: write
       contents: read
@@ -66,21 +68,27 @@ jobs:
       - uses: julia-actions/setup-julia@v3
         with:
           version: '1.10'
-      - uses: julia-actions/cache@v3
+      - name: Refresh registries
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.Registry.update()
       - name: Resolve dependencies
         shell: julia --color=yes {0}
         run: |
           using Pkg
           Pkg.resolve()
-      # NOTE: Qiskit_jll ~2.2.3 has a transitive dependency on LibMPDec_jll which is not
-      # available in the General registry. This causes the resolver to fail. When Qiskit_jll
-      # is updated to a version without this dependency, this step should succeed.
       - uses: julia-actions/julia-downgrade-compat@v2
-        continue-on-error: true
         with:
-          mode: alldeps
+          mode: forcedeps
           julia_version: '1.10'
+          skip: 'Libdl,Test'
           projects: '.'
+      - name: Show resolved package versions
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.status(; mode=Pkg.PKGMODE_MANIFEST)
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
