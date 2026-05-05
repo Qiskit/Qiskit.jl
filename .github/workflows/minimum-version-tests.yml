@@ -43,7 +43,7 @@ jobs:
           Pkg.resolve()
       - uses: julia-actions/julia-downgrade-compat@v2
         with:
-          mode: forcedeps
+          mode: deps
           julia_version: ${{ matrix.julia-version }}
       - name: Show resolved package versions
         shell: julia --color=yes {0}
@@ -52,7 +52,9 @@ jobs:
           Pkg.status(; mode=Pkg.PKGMODE_MANIFEST)
       - uses: julia-actions/julia-buildpkg@v1
       - name: Test package
-        uses: julia-actions/julia-runtest@v1
-        with:
-          allow_reresolve: false
-          force_latest_compatible_version: false
+        shell: julia --project=. --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
+          Pkg.instantiate()
+          include("test/runtests.jl")
