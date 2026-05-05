@@ -42,6 +42,14 @@ function qk_transpile_layout_free(obj::TranspileLayout)::Nothing
     nothing
 end
 
+function Base.show(io::IO, obj::TranspileLayout)
+    if obj.ptr == C_NULL
+        print(io, "TranspileLayout()")
+    else
+        print(io, "TranspileLayout(...)")
+    end
+end
+
 const TranspileResult = @NamedTuple begin
     circuit::QuantumCircuit
     layout::TranspileLayout
@@ -50,6 +58,14 @@ end
 TranspileResult(circuit::QuantumCircuit, layout::TranspileLayout) =
     # Call the NamedTuple constructor
     TranspileResult((circuit, layout))
+
+function Base.show(io::IO, result::TranspileResult)
+    print(io, "TranspileResult(circuit=")
+    show(io, result.circuit)
+    print(io, ", layout=")
+    show(io, result.layout)
+    print(io, ")")
+end
 
 function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
     result_ref = qk_transpile(qc.ptr, target.ptr)

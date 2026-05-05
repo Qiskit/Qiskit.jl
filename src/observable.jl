@@ -62,4 +62,12 @@ function qk_obs_len(obs::SparseObservable)::Int
     qk_obs_len(obs.ptr)
 end
 
+function Base.show(io::IO, obs::SparseObservable)
+    if obs.ptr == C_NULL
+        print(io, "SparseObservable()")
+    else
+        print(io, "SparseObservable(num_qubits=$(qk_obs_num_qubits(obs)), num_terms=$(qk_obs_num_terms(obs)))")
+    end
+end
+
 export SparseObservable

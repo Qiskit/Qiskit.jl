@@ -72,6 +72,14 @@ function Base.getproperty(obj::TargetEntry, sym::Symbol)
     end
 end
 
+function Base.show(io::IO, obj::TargetEntry)
+    if obj.ptr == C_NULL
+        print(io, "TargetEntry()")
+    else
+        print(io, "TargetEntry(num_properties=$(qk_target_entry_num_properties(obj)))")
+    end
+end
+
 """
     Target
 
@@ -144,6 +152,14 @@ function Base.getproperty(obj::Target, sym::Symbol)
         return qk_target_num_instructions(obj)
     else
         return getfield(obj, sym)
+    end
+end
+
+function Base.show(io::IO, obj::Target)
+    if obj.ptr == C_NULL
+        print(io, "Target()")
+    else
+        print(io, "Target(num_qubits=$(qk_target_num_qubits(obj)), num_instructions=$(qk_target_num_instructions(obj)))")
     end
 end
 

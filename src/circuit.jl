@@ -183,6 +183,14 @@ function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
     union(fieldnames(typeof(obj)), (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops, :reset, :measure, :barrier, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
 end
 
+function Base.show(io::IO, qc::QuantumCircuit)
+    if qc.ptr == C_NULL
+        print(io, "QuantumCircuit()")
+    else
+        print(io, "QuantumCircuit(num_qubits=$(qc.num_qubits), num_clbits=$(qc.num_clbits), num_instructions=$(qc.num_instructions))")
+    end
+end
+
 function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
     if sym === :data
         return QuantumCircuitData(qc)
