@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction
+import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction, QkDelayUnit, QkDelayUnit_S, QkDelayUnit_MS, QkDelayUnit_US, QkDelayUnit_NS, QkDelayUnit_PS
 import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
 using .C
 
@@ -131,6 +131,14 @@ function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit
     qk_circuit_unitary(cl.qc, matrix, qubits)
 end
 
+struct DelayInstructionClosure
+    qc::QuantumCircuit
+end
+
+function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit = QkDelayUnit_S)::Nothing
+    qk_circuit_delay(cl.qc, qubit, duration, unit)
+end
+
 struct CountOpsClosure
     qc::QuantumCircuit
 end
@@ -180,7 +188,7 @@ function Base.iterate(qcdata::QuantumCircuitData, state)
 end
 
 function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
-    union(fieldnames(typeof(obj)), (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops, :reset, :measure, :barrier, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
+    union(fieldnames(typeof(obj)), (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops, :reset, :measure, :barrier, :delay, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
 end
 
 function Base.show(io::IO, qc::QuantumCircuit)
@@ -208,6 +216,8 @@ function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
         return MeasureInstructionClosure(qc)
     elseif sym === :barrier
         return BarrierInstructionClosure(qc)
+    elseif sym === :delay
+        return DelayInstructionClosure(qc)
     elseif sym === :unitary
         return UnitaryInstructionClosure(qc)
     elseif sym === :h

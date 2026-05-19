@@ -19,18 +19,19 @@
     qc.h(2)
     qk_circuit_gate(qc, QkGate_XXPlusYY, [2, 3], [0.3, 0])
     qk_circuit_delay(qc, 1, 1, QkDelayUnit_NS)
+    qc.delay(2, 2.5, QkDelayUnit_US)
     qc.unitary([0 -im; im 0], [1])
     qc.barrier()
     qc.measure(4, 1)
     qc.reset(4)
-    @test qc.num_instructions == 8
+    @test qc.num_instructions == 9
     instructions = [instruction.name for instruction in qc.data]
-    @test instructions == ["rz", "h", "xx_plus_yy", "delay", "unitary", "barrier", "measure", "reset"]
+    @test instructions == ["rz", "h", "xx_plus_yy", "delay", "delay", "unitary", "barrier", "measure", "reset"]
     expected_op_counts = Dict(
         "rz" => 1,
         "h" => 1,
         "xx_plus_yy" => 1,
-        "delay" => 1,
+        "delay" => 2,
         "unitary" => 1,
         "barrier" => 1,
         "measure" => 1,
@@ -50,6 +51,7 @@
         @test qc.num_qubits == 4
         qc.rz(0.25, 0)
         qc.cx(0, 3)
+        qc.delay(1, 4.0)
         qc.unitary([0 -im; im 0], [0])
         qc.barrier(0, 1, 2, 3)
         qc.measure(3, 0)
@@ -61,10 +63,11 @@
         @test_throws ArgumentError qk_circuit_measure(qc, 3, 1)
         @test_throws ArgumentError qk_circuit_reset(qc, 4)
         instructions = [instruction.name for instruction in qc.data]
-        @test instructions == ["rz", "cx", "unitary", "barrier", "measure", "reset"]
+        @test instructions == ["rz", "cx", "delay", "unitary", "barrier", "measure", "reset"]
         @test qk_circuit_get_instruction(qc, 0).params == [0.25]
         @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
-        @test qk_circuit_get_instruction(qc, 4).clbits == [0]
+        @test qk_circuit_get_instruction(qc, 2).params == [4.0]
+        @test qk_circuit_get_instruction(qc, 5).clbits == [0]
     end
 
     @testset "Base.show method" begin
