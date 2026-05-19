@@ -20,7 +20,7 @@ Method for Unitful quantities. Uses the unit specified by the user.
 - `ns` (nanoseconds)
 - `ps` (picoseconds)
 
-Other units will be converted to the nearest supported unit.
+Other units are not supported.
 """
 function (cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Quantity)::Nothing
     # Extract the numeric value and unit the user specified
@@ -44,10 +44,7 @@ function (cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Quantit
         qk_unit = QkDelayUnit_PS
         final_duration = val
     else
-        # For unsupported units, convert to seconds and use the seconds unit
-        duration_s = Unitful.uconvert(Unitful.s, duration) |> Unitful.ustrip
-        qk_unit = QkDelayUnit_S
-        final_duration = duration_s
+        throw(ArgumentError("unsupported Unitful duration unit: $(u)"))
     end
     
     qk_circuit_delay(cl.qc, qubit, final_duration, qk_unit)
