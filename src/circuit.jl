@@ -135,7 +135,7 @@ struct DelayInstructionClosure
     qc::QuantumCircuit
 end
 
-function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit = QkDelayUnit_S)::Nothing
+function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing
     qk_circuit_delay(cl.qc, qubit, duration, unit)
 end
 

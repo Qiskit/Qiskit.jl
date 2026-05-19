@@ -51,7 +51,7 @@
         @test qc.num_qubits == 4
         qc.rz(0.25, 0)
         qc.cx(0, 3)
-        qc.delay(1, 4.0)
+        qc.delay(1, 4.0, QkDelayUnit_S)
         qc.unitary([0 -im; im 0], [0])
         qc.barrier(0, 1, 2, 3)
         qc.measure(3, 0)
