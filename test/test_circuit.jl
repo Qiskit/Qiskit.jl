@@ -51,7 +51,7 @@
         @test qc.num_qubits == 4
         qc.rz(0.25, 0)
         qc.cx(0, 3)
-        qc.delay(1, 4.0)
+        qc.delay(1, 4.0, QkDelayUnit_S)
         qc.unitary([0 -im; im 0], [0])
         qc.barrier(0, 1, 2, 3)
         qc.measure(3, 0)
@@ -68,5 +68,25 @@
         @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
         @test qk_circuit_get_instruction(qc, 2).params == [4.0]
         @test qk_circuit_get_instruction(qc, 5).clbits == [0]
+    end
+    
+    @testset "Unitful support" begin
+        qc = QuantumCircuit(4, 0)
+        
+        # Test supported units
+        qc.delay(1, 1.5 * Unitful.s)
+        qc.delay(2, 500 * Unitful.ms)
+        qc.delay(3, 10 * Unitful.μs)
+        qc.delay(4, 5 * Unitful.ns)
+        qc.delay(1, 100 * Unitful.ps)
+        
+        @test qc.num_instructions == 5
+        @test qc.data[1].name == "delay"
+        @test qc.data[1].params == [1.5]
+        @test qc.data[2].params == [500.0]
+        @test qc.data[3].params == [10.0]
+        @test qc.data[4].params == [5.0]
+        @test qc.data[5].params == [100.0]
+        @test_throws ArgumentError qc.delay(1, 1 * Unitful.m)
     end
 end
