@@ -34,6 +34,7 @@ The additional properties are methods:
 - `barrier(qubit1, qubit2, ...)`
 - `unitary(matrix, [qubit1, qubit2, ...])`
 - many [standard gates](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions) corresponding to Qiskit's Python API
+- `delay(qubit, duration, unit)` - insert a time delay on `qubit` with specified `duration` and `unit`
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
