@@ -94,6 +94,7 @@
         output = String(take!(io))
         @test contains(output, "QuantumCircuit")
         @test contains(output, "num_qubits=3")
+    end
     
     @testset "Unitful support" begin
         qc = QuantumCircuit(4, 0)
