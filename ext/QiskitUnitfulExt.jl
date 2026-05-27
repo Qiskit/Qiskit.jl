@@ -22,7 +22,7 @@ Method for Unitful quantities. Uses the unit specified by the user.
 
 Other units are not supported.
 """
-function (cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Quantity)::Nothing
+function (cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Time)::Nothing
     # Extract the numeric value and unit the user specified
     val = Unitful.ustrip(duration)
     u = Unitful.unit(duration)
