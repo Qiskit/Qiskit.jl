@@ -87,6 +87,6 @@
         @test qc.data[3].params == [10.0]
         @test qc.data[4].params == [5.0]
         @test qc.data[5].params == [100.0]
-        @test_throws ArgumentError qc.delay(1, 1 * Unitful.m)
+        @test_throws ArgumentError qc.delay(1, 1 * Unitful.Ms)
     end
 end
