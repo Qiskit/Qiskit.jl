@@ -14,6 +14,7 @@ using Qiskit
 using Qiskit.C
 using Test
 using Aqua
+using Unitful
 
 @testset "Qiskit.jl" begin
     @testset "Code quality (Aqua.jl)" begin
