@@ -5,6 +5,7 @@ on:
       - main
     tags: ['*']
   pull_request:
+  merge_group:
   workflow_dispatch:
 concurrency:
   # Skip intermediate builds: always.
