@@ -2,6 +2,7 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://qiskit.github.io/Qiskit.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://qiskit.github.io/Qiskit.jl/dev/)
+[![Qiskit Ecosystem](https://qisk.it/e-50b8eb33)](https://qisk.it/ecosystem)
 [![Build Status](https://github.com/Qiskit/Qiskit.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Qiskit/Qiskit.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://coveralls.io/repos/github/Qiskit/Qiskit.jl/badge.svg?branch=main)](https://coveralls.io/github/Qiskit/Qiskit.jl?branch=main)
 [![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/Q/Qiskit.html)
