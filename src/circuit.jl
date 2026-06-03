@@ -128,8 +128,12 @@ struct UnitaryInstructionClosure
     qc::QuantumCircuit
 end
 
-function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer})::Nothing
-    qk_circuit_unitary(cl.qc, matrix, qubits)
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
+    qk_circuit_unitary(cl.qc, matrix, qubits; check_input)
+end
+
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit::Integer; check_input::Bool = true)::Nothing
+    qk_circuit_unitary(cl.qc, matrix, [qubit]; check_input)
 end
 
 struct DelayInstructionClosure
@@ -307,8 +311,6 @@ function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
     elseif sym === :
         return GateClosure{QkGate_C3SX}(qc, , )
         =#
-    elseif sym === :unitary
-        throw(NotImplementedError())
     elseif sym === :rcccx
         return GateClosure{QkGate_RC3X}(qc, 4, 0)
     else
