@@ -132,8 +132,8 @@ function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit
     qk_circuit_unitary(cl.qc, matrix, qubits; check_input)
 end
 
-function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubit::Integer; check_input::Bool = true)::Nothing
-    qk_circuit_unitary(cl.qc, matrix, [qubit]; check_input)
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
+    qk_circuit_unitary(cl.qc, matrix, collect(qubits); check_input)
 end
 
 struct DelayInstructionClosure
