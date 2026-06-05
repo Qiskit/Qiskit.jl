@@ -113,7 +113,12 @@
         @test qc.data[3].qubits == [1, 2]
 
         # check_input keyword forwarded
-        qc.unitary([0 1; 1 0], [3]; check_input = false)
+        non_unitary = [1.0 1.0; 0.0 1.0]
+        qc.unitary(non_unitary, [3]; check_input = false)
+        @test qc.num_instructions == 4
+
+        # check_input=true enforces unitarity; expects clean error, not panic
+        @test_throws ErrorException qc.unitary(non_unitary, [3]; check_input = true)
         @test qc.num_instructions == 4
 
         # wrong matrix size throws
