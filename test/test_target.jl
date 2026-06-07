@@ -36,8 +36,6 @@
     end
 
     @testset "Base.show method for TargetEntry" begin
-        # Note: We don't test qk_target_entry_add_property as it requires careful handling of wrapper types
-        
         entry = Qiskit.target_entry_gate(QkGate_X)
         io = IOBuffer()
         show(io, entry)
