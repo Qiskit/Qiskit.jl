@@ -28,6 +28,7 @@ end
     QkExitCode_AlignmentError = 0x0000000000000066
     QkExitCode_IndexError = 0x0000000000000067
     QkExitCode_DuplicateIndexError = 0x0000000000000068
+    QkExitCode_InvalidOperationKind = 0x0000000000000069
     QkExitCode_ArithmeticError = 0x00000000000000c8
     QkExitCode_MismatchedQubits = 0x00000000000000c9
     QkExitCode_ExpectedUnitary = 0x00000000000000ca
@@ -37,6 +38,11 @@ end
     QkExitCode_TargetInvalidQargsKey = 0x000000000000012f
     QkExitCode_TargetInvalidInstKey = 0x0000000000000130
     QkExitCode_TranspilerError = 0x0000000000000190
+    QkExitCode_DagError = 0x00000000000001f4
+    QkExitCode_DagComposeMismatch = 0x00000000000001f5
+    QkExitCode_DagComposeMissingBit = 0x00000000000001f6
+    QkExitCode_ParameterError = 0x0000000000000258
+    QkExitCode_ParameterNameConflict = 0x0000000000000259
 end
 
 @cenum QkDelayUnit::UInt8 begin
@@ -114,6 +120,8 @@ mutable struct QkTranspileLayout end
 
 mutable struct QkVF2LayoutResult end
 
+mutable struct QkParam end
+
 struct QkOpCount
     name::Ptr{Cchar}
     count::Csize_t
@@ -128,7 +136,7 @@ struct QkCircuitInstruction
     name::Ptr{Cchar}
     qubits::Ptr{UInt32}
     clbits::Ptr{UInt32}
-    params::Ptr{Cdouble}
+    params::Ptr{Ptr{QkParam}}
     num_qubits::UInt32
     num_clbits::UInt32
     num_params::UInt32
@@ -179,15 +187,15 @@ const QISKIT_RELEASE_LEVEL_FINAL = 0x0f
 
 const QISKIT_VERSION_MAJOR = 2
 
-const QISKIT_VERSION_MINOR = 2
+const QISKIT_VERSION_MINOR = 4
 
-const QISKIT_VERSION_PATCH = 3
+const QISKIT_VERSION_PATCH = 1
 
 const QISKIT_RELEASE_LEVEL = QISKIT_RELEASE_LEVEL_FINAL
 
 const QISKIT_RELEASE_SERIAL = 0
 
-const QISKIT_VERSION = "2.2.3"
+const QISKIT_VERSION = "2.4.1"
 
 # exports
 const PREFIXES = ["Qk", "qk_", "QISKIT_"]
