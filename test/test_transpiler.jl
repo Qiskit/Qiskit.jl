@@ -87,8 +87,6 @@
     @testset "Base.show method for TranspileLayout and TranspileResult" begin
         # These show methods are tested implicitly through the transpile_bv tests
         # where transpile_result is created and could be displayed
-        # For now, just verify the show method exists and doesn't error on simple objects
-        
         qc = QuantumCircuit(2)
         qc.h(1)
         

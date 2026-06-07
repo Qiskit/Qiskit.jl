@@ -54,13 +54,9 @@ target_entry_reset()::TargetEntry =
 target_entry_fixed(operation::QkGate, params::AbstractVector{<:Real})::TargetEntry =
     TargetEntry(@ccall(libqiskit.qk_target_entry_new_fixed(operation::QkGate, params::Ref{Cdouble})::Ptr{QkTargetEntry}))
 
-qk_target_entry_num_properties(obj::TargetEntry)::Int =
-    @ccall libqiskit.qk_target_entry_num_properties(obj.ptr::Ptr{QkTargetEntry})::Csize_t
+qk_target_entry_num_properties(obj::TargetEntry)::Int = qk_target_entry_num_properties(obj.ptr)
 
-function qk_target_entry_add_property(target_entry::TargetEntry, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
-    qubits0 = Vector{UInt32}(qubits .- 1)
-    check_exit_code(@ccall(libqiskit.qk_target_entry_add_property(target_entry.ptr::Ptr{QkTargetEntry}, qubits0::Ref{UInt32}, length(qubits0)::UInt32, duration::Cdouble, error::Cdouble)::QkExitCode))
-end
+qk_target_entry_add_property(target_entry::TargetEntry, args...) = qk_target_entry_add_property(target_entry.ptr, args...)
 
 function Base.propertynames(obj::TargetEntry; private::Bool = false)
     union(fieldnames(typeof(obj)), (:num_properties,))
@@ -76,7 +72,7 @@ end
 
 function Base.show(io::IO, obj::TargetEntry)
     if obj.ptr == C_NULL
-        print(io, "TargetEntry()")
+        print(io, "TargetEntry(NULL)")
     else
         print(io, "TargetEntry(num_properties=$(qk_target_entry_num_properties(obj)))")
     end
@@ -129,11 +125,11 @@ function Base.copy(obj::Target)::Target
     Target(@ccall(libqiskit.qk_target_copy(obj.ptr::Ref{QkTarget})::Ptr{QkTarget}))
 end
 
-qk_target_num_qubits(obj::Target)::Int =
-    @ccall libqiskit.qk_target_num_qubits(obj.ptr::Ptr{QkTarget})::UInt32
+qk_target_num_qubits(obj::Target) =
+    qk_target_num_qubits(obj.ptr)
 
-qk_target_num_instructions(obj::Target)::Int =
-    @ccall libqiskit.qk_target_num_instructions(obj.ptr::Ptr{QkTarget})::Csize_t
+qk_target_num_instructions(obj::Target) =
+    qk_target_num_instructions(obj.ptr)
 
 #qk_target_dt
 
@@ -166,13 +162,7 @@ function Base.show(io::IO, obj::Target)
 end
 
 function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
-    if target.ptr == C_NULL
-        throw(ArgumentError("Ptr{QkTarget} is NULL."))
-    end
-    if entry.ptr == C_NULL
-        throw(ArgumentError("Ptr{QkTargetEntry} is NULL."))
-    end
-    check_exit_code(@ccall libqiskit.qk_target_add_instruction(target.ptr::Ptr{QkTarget}, entry.ptr::Ptr{QkTargetEntry})::QkExitCode)
+    qk_target_add_instruction(target.ptr, entry.ptr)
     entry.ptr = C_NULL
     nothing
 end
