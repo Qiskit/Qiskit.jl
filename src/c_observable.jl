@@ -13,28 +13,28 @@
 import .LibQiskit: QkBitTerm, QkObs
 
 function qk_bitterm_label(bit_term::QkBitTerm)::Char
-    @ccall libqiskit.qk_bitterm_label(bit_term::UInt8)::UInt8
+    LibQiskit.qk_bitterm_label(bit_term)
 end
 
 function qk_obs_free(obs::Ptr{QkObs})
-    @ccall libqiskit.qk_obs_free(obs::Ptr{QkObs})::Cvoid
+    LibQiskit.qk_obs_free(obs)
 end
 
 function qk_obs_zero(n::Integer)
     n >= 0 || throw()
-    @ccall libqiskit.qk_obs_zero(n::UInt32)::Ptr{QkObs}
+    LibQiskit.qk_obs_zero(UInt32(n))
 end
 
 function qk_obs_num_terms(obs::Ptr{QkObs})::Int
-    signed(@ccall libqiskit.qk_obs_num_terms(obs::Ptr{QkObs})::Csize_t)
+    signed(LibQiskit.qk_obs_num_terms(obs))
 end
 
 function qk_obs_num_qubits(obs::Ptr{QkObs})::Int
-    signed(@ccall libqiskit.qk_obs_num_qubits(obs::Ptr{QkObs})::UInt32)
+    signed(LibQiskit.qk_obs_num_qubits(obs))
 end
 
 function qk_obs_len(obs::Ptr{QkObs})::Int
-    signed(@ccall libqiskit.qk_obs_len(obs::Ptr{QkObs})::Csize_t)
+    signed(LibQiskit.qk_obs_len(obs))
 end
 
 export QkBitTerm, qk_bitterm_label, QkObs, qk_obs_free, qk_obs_zero, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_len

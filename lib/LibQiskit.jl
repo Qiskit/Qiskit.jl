@@ -166,7 +166,169 @@ struct QkTranspileResult
 end
 
 function qk_complex64_from_native(arg1)
-    ccall((:qk_complex64_from_native, libqiskit), QkComplex64, (Cint,), arg1)
+    @ccall libqiskit.qk_complex64_from_native(arg1::Cint)::QkComplex64
+end
+
+# Circuit functions
+function qk_circuit_new(num_qubits, num_clbits)
+    @ccall libqiskit.qk_circuit_new(num_qubits::UInt32, num_clbits::UInt32)::Ptr{QkCircuit}
+end
+
+function qk_circuit_free(qc)
+    @ccall libqiskit.qk_circuit_free(qc::Ptr{QkCircuit})::Cvoid
+end
+
+function qk_circuit_copy(qc)
+    @ccall libqiskit.qk_circuit_copy(qc::Ptr{QkCircuit})::Ptr{QkCircuit}
+end
+
+function qk_circuit_num_qubits(qc)
+    @ccall libqiskit.qk_circuit_num_qubits(qc::Ptr{QkCircuit})::UInt32
+end
+
+function qk_circuit_num_clbits(qc)
+    @ccall libqiskit.qk_circuit_num_clbits(qc::Ptr{QkCircuit})::UInt32
+end
+
+function qk_circuit_num_instructions(qc)
+    @ccall libqiskit.qk_circuit_num_instructions(qc::Ptr{QkCircuit})::Csize_t
+end
+
+function qk_circuit_get_instruction(qc, index, inst)
+    @ccall libqiskit.qk_circuit_get_instruction(qc::Ptr{QkCircuit}, index::Csize_t, inst::Ptr{QkCircuitInstruction})::Cvoid
+end
+
+function qk_circuit_instruction_clear(inst)
+    @ccall libqiskit.qk_circuit_instruction_clear(inst::Ptr{QkCircuitInstruction})::Cvoid
+end
+
+function qk_circuit_gate(qc, gate, qubits, params)
+    @ccall libqiskit.qk_circuit_gate(qc::Ptr{QkCircuit}, gate::QkGate, qubits::Ptr{UInt32}, params::Ptr{Cdouble})::QkExitCode
+end
+
+function qk_circuit_measure(qc, qubit, clbit)
+    @ccall libqiskit.qk_circuit_measure(qc::Ptr{QkCircuit}, qubit::UInt32, clbit::UInt32)::QkExitCode
+end
+
+function qk_circuit_reset(qc, qubit)
+    @ccall libqiskit.qk_circuit_reset(qc::Ptr{QkCircuit}, qubit::UInt32)::QkExitCode
+end
+
+function qk_circuit_barrier(qc, qubits, num_qubits)
+    @ccall libqiskit.qk_circuit_barrier(qc::Ptr{QkCircuit}, qubits::Ptr{UInt32}, num_qubits::UInt32)::QkExitCode
+end
+
+function qk_circuit_unitary(qc, matrix, qubits, num_qubits, check_input)
+    @ccall libqiskit.qk_circuit_unitary(qc::Ptr{QkCircuit}, matrix::Ptr{QkComplex64}, qubits::Ptr{UInt32}, num_qubits::UInt32, check_input::UInt8)::QkExitCode
+end
+
+function qk_circuit_delay(qc, qubit, duration, unit)
+    @ccall libqiskit.qk_circuit_delay(qc::Ptr{QkCircuit}, qubit::UInt32, duration::Cdouble, unit::UInt8)::QkExitCode
+end
+
+function qk_circuit_count_ops(qc)
+    @ccall libqiskit.qk_circuit_count_ops(qc::Ptr{QkCircuit})::QkOpCounts
+end
+
+function qk_opcounts_clear(opcounts)
+    @ccall libqiskit.qk_opcounts_clear(opcounts::Ptr{QkOpCounts})::Cvoid
+end
+
+# Gate functions
+function qk_gate_num_qubits(gate)
+    @ccall libqiskit.qk_gate_num_qubits(gate::QkGate)::UInt32
+end
+
+function qk_gate_num_params(gate)
+    @ccall libqiskit.qk_gate_num_params(gate::QkGate)::UInt32
+end
+
+# Observable / BitTerm functions
+function qk_bitterm_label(bit_term)
+    @ccall libqiskit.qk_bitterm_label(bit_term::UInt8)::UInt8
+end
+
+function qk_obs_zero(n)
+    @ccall libqiskit.qk_obs_zero(n::UInt32)::Ptr{QkObs}
+end
+
+function qk_obs_free(obs)
+    @ccall libqiskit.qk_obs_free(obs::Ptr{QkObs})::Cvoid
+end
+
+function qk_obs_num_terms(obs)
+    @ccall libqiskit.qk_obs_num_terms(obs::Ptr{QkObs})::Csize_t
+end
+
+function qk_obs_num_qubits(obs)
+    @ccall libqiskit.qk_obs_num_qubits(obs::Ptr{QkObs})::UInt32
+end
+
+function qk_obs_len(obs)
+    @ccall libqiskit.qk_obs_len(obs::Ptr{QkObs})::Csize_t
+end
+
+# Target functions
+function qk_target_new(num_qubits)
+    @ccall libqiskit.qk_target_new(num_qubits::UInt32)::Ptr{QkTarget}
+end
+
+function qk_target_free(target)
+    @ccall libqiskit.qk_target_free(target::Ptr{QkTarget})::Cvoid
+end
+
+function qk_target_copy(target)
+    @ccall libqiskit.qk_target_copy(target::Ptr{QkTarget})::Ptr{QkTarget}
+end
+
+function qk_target_num_qubits(target)
+    @ccall libqiskit.qk_target_num_qubits(target::Ptr{QkTarget})::UInt32
+end
+
+function qk_target_num_instructions(target)
+    @ccall libqiskit.qk_target_num_instructions(target::Ptr{QkTarget})::Csize_t
+end
+
+function qk_target_add_instruction(target, entry)
+    @ccall libqiskit.qk_target_add_instruction(target::Ptr{QkTarget}, entry::Ptr{QkTargetEntry})::QkExitCode
+end
+
+# TargetEntry functions
+function qk_target_entry_new(operation)
+    @ccall libqiskit.qk_target_entry_new(operation::QkGate)::Ptr{QkTargetEntry}
+end
+
+function qk_target_entry_new_measure()
+    @ccall libqiskit.qk_target_entry_new_measure()::Ptr{QkTargetEntry}
+end
+
+function qk_target_entry_new_reset()
+    @ccall libqiskit.qk_target_entry_new_reset()::Ptr{QkTargetEntry}
+end
+
+function qk_target_entry_new_fixed(operation, params)
+    @ccall libqiskit.qk_target_entry_new_fixed(operation::QkGate, params::Ptr{Cdouble})::Ptr{QkTargetEntry}
+end
+
+function qk_target_entry_free(entry)
+    @ccall libqiskit.qk_target_entry_free(entry::Ptr{QkTargetEntry})::Cvoid
+end
+
+function qk_target_entry_num_properties(entry)
+    @ccall libqiskit.qk_target_entry_num_properties(entry::Ptr{QkTargetEntry})::Csize_t
+end
+
+function qk_target_entry_add_property(entry, qubits, num_qubits, duration, error)
+    @ccall libqiskit.qk_target_entry_add_property(entry::Ptr{QkTargetEntry}, qubits::Ptr{UInt32}, num_qubits::UInt32, duration::Cdouble, error::Cdouble)::QkExitCode
+end
+
+# Transpiler functions
+function qk_transpile(qc, target, options, result, error_string)
+    @ccall libqiskit.qk_transpile(qc::Ptr{QkCircuit}, target::Ptr{QkTarget}, options::Ptr{QkTranspileOptions}, result::Ptr{QkTranspileResult}, error_string::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_transpile_layout_free(layout)
+    @ccall libqiskit.qk_transpile_layout_free(layout::Ptr{QkTranspileLayout})::Cvoid
 end
 
 const QISKIT_RELEASE_LEVEL_DEV = 0x0a

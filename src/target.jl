@@ -41,19 +41,17 @@ function qk_target_entry_free(obj::TargetEntry)::Nothing
 end
 
 target_entry_gate(operation::QkGate)::TargetEntry =
-    TargetEntry(@ccall(libqiskit.qk_target_entry_new(operation::QkGate)::Ptr{QkTargetEntry}))
+    TargetEntry(C.LibQiskit.qk_target_entry_new(operation))
 
 target_entry_measure()::TargetEntry =
-    TargetEntry(@ccall(libqiskit.qk_target_entry_new_measure()::Ptr{QkTargetEntry}))
+    TargetEntry(C.LibQiskit.qk_target_entry_new_measure())
 
 target_entry_reset()::TargetEntry =
-    TargetEntry(@ccall(libqiskit.qk_target_entry_new_reset()::Ptr{QkTargetEntry}))
+    TargetEntry(C.LibQiskit.qk_target_entry_new_reset())
 
 function target_entry_fixed(operation::QkGate, params::AbstractVector{<:Real})::TargetEntry
-    if length(params) != qk_gate_num_params(gate)
-        throw(ArgumentError("Unexpected number of parameters for gate."))
-    end
-    TargetEntry(@ccall(libqiskit.qk_target_entry_new_fixed(operation::QkGate, params::Ref{Cdouble})::Ptr{QkTargetEntry}))
+    params_f64 = Vector{Cdouble}(params)
+    TargetEntry(C.LibQiskit.qk_target_entry_new_fixed(operation, pointer(params_f64)))
 end
 
 qk_target_entry_num_properties(obj::TargetEntry)::Int = qk_target_entry_num_properties(obj.ptr)
@@ -92,7 +90,7 @@ mutable struct Target
     """
     function Target(num_qubits::Integer)
         num_qubits >= 0 || throw(ArgumentError("num_qubits must be non-negative."))
-        target = new(@ccall(libqiskit.qk_target_new(num_qubits::UInt32)::Ptr{QkTarget}))
+        target = new(C.LibQiskit.qk_target_new(UInt32(num_qubits)))
         # Take ownership; it's our job to free it eventually
         finalizer(qk_target_free, target)
         target
@@ -116,7 +114,7 @@ end
 
 function Base.copy(obj::Target)::Target
     check_not_null(obj.ptr)
-    Target(@ccall(libqiskit.qk_target_copy(obj.ptr::Ref{QkTarget})::Ptr{QkTarget}))
+    Target(C.LibQiskit.qk_target_copy(obj.ptr))
 end
 
 qk_target_num_qubits(obj::Target) =

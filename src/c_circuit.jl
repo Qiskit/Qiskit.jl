@@ -10,21 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .LibQiskit: QkGate, QkCircuit, QkDelayUnit, QkOpCount, QkOpCounts
+import .LibQiskit: QkGate, QkCircuit, QkDelayUnit, QkOpCount, QkOpCounts, QkCircuitInstruction, QkComplex64
 
-mutable struct QkCircuitInstruction
-    name::Cstring
-    qubits::Ptr{UInt32}
-    clbits::Ptr{UInt32}
-    params::Ptr{Cdouble}
-    num_qubits::UInt32
-    num_clbits::UInt32
-    num_params::UInt32
-
-    QkCircuitInstruction() = new(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0)
-end
-
-mutable struct CircuitInstruction
+struct CircuitInstruction
     name::String
     qubits::Vector{Int}
     clbits::Vector{Int}
@@ -51,52 +39,55 @@ function check_not_null(qc::Ptr{QkCircuit})::Nothing
 end
 
 function qk_circuit_free(qc::Ptr{QkCircuit})
-    @ccall libqiskit.qk_circuit_free(qc::Ptr{QkCircuit})::Cvoid
+    LibQiskit.qk_circuit_free(qc)
 end
 
-function qk_circuit_num_qubits(qc::Ref{QkCircuit})::Int
+function qk_circuit_num_qubits(qc::Ptr{QkCircuit})::Int
     check_not_null(qc)
-    @ccall libqiskit.qk_circuit_num_qubits(qc::Ref{QkCircuit})::UInt32
+    LibQiskit.qk_circuit_num_qubits(qc)
 end
 
-function qk_circuit_num_clbits(qc::Ref{QkCircuit})::Int
+function qk_circuit_num_clbits(qc::Ptr{QkCircuit})::Int
     check_not_null(qc)
-    @ccall libqiskit.qk_circuit_num_clbits(qc::Ref{QkCircuit})::UInt32
+    LibQiskit.qk_circuit_num_clbits(qc)
 end
 
-function qk_circuit_num_instructions(qc::Ref{QkCircuit})::Int
+function qk_circuit_num_instructions(qc::Ptr{QkCircuit})::Int
     check_not_null(qc)
-    @ccall libqiskit.qk_circuit_num_instructions(qc::Ref{QkCircuit})::Csize_t
+    LibQiskit.qk_circuit_num_instructions(qc)
 end
 
-function qk_circuit_get_instruction(qc::Ref{QkCircuit}, index::Integer; offset::Int = 1)::CircuitInstruction
+function qk_circuit_get_instruction(qc::Ptr{QkCircuit}, index::Integer; offset::Int = 1)::CircuitInstruction
     check_not_null(qc)
     if !checkindex(Bool, range(offset, length=qk_circuit_num_instructions(qc)), index)
         throw(ArgumentError("Invalid instruction index"))
     end
-    inst = QkCircuitInstruction()
+    inst = Ref(QkCircuitInstruction(Ptr{Cchar}(C_NULL), Ptr{UInt32}(C_NULL), Ptr{UInt32}(C_NULL), Ptr{Cdouble}(C_NULL), UInt32(0), UInt32(0), UInt32(0)))
     index0 = index - offset
-    @ccall libqiskit.qk_circuit_get_instruction(qc::Ref{QkCircuit}, index0::Csize_t, inst::Ref{QkCircuitInstruction})::Cvoid
-    retval = CircuitInstruction(
-        unsafe_string(inst.name),
-        unsafe_wrap(Array, inst.qubits, inst.num_qubits) .+ offset,
-        unsafe_wrap(Array, inst.clbits, inst.num_clbits) .+ offset,
-        # We need to copy, otherwise the underlying memory is about to be free'd.
-        copy(unsafe_wrap(Array, inst.params, inst.num_params))
-    )
-    @ccall libqiskit.qk_circuit_instruction_clear(inst::Ref{QkCircuitInstruction})::Cvoid
+    GC.@preserve inst begin
+        LibQiskit.qk_circuit_get_instruction(qc, Csize_t(index0), Base.unsafe_convert(Ptr{QkCircuitInstruction}, inst))
+        c_inst = inst[]
+        retval = CircuitInstruction(
+            unsafe_string(c_inst.name),
+            unsafe_wrap(Array, c_inst.qubits, c_inst.num_qubits) .+ offset,
+            unsafe_wrap(Array, c_inst.clbits, c_inst.num_clbits) .+ offset,
+            # We need to copy, otherwise the underlying memory is about to be free'd.
+            copy(unsafe_wrap(Array, c_inst.params, c_inst.num_params))
+        )
+        LibQiskit.qk_circuit_instruction_clear(Base.unsafe_convert(Ptr{QkCircuitInstruction}, inst))
+    end
     return retval
 end
 
 function qk_gate_num_qubits(gate::QkGate)::Int
-    @ccall libqiskit.qk_gate_num_qubits(gate::QkGate)::UInt32
+    LibQiskit.qk_gate_num_qubits(gate)
 end
 
 function qk_gate_num_params(gate::QkGate)::Int
-    @ccall libqiskit.qk_gate_num_params(gate::QkGate)::UInt32
+    LibQiskit.qk_gate_num_params(gate)
 end
 
-function qk_circuit_gate(qc::Ref{QkCircuit}, gate::QkGate, qubits::AbstractVector{<:Integer}, params::Union{Nothing,AbstractVector{<:Real}} = nothing; offset::Int = 1)::Nothing
+function qk_circuit_gate(qc::Ptr{QkCircuit}, gate::QkGate, qubits::AbstractVector{<:Integer}, params::Union{Nothing,AbstractVector{<:Real}} = nothing; offset::Int = 1)::Nothing
     check_not_null(qc)
     if length(qubits) != qk_gate_num_qubits(gate)
         throw(ArgumentError("Unexpected number of qubits for gate."))
@@ -109,14 +100,15 @@ function qk_circuit_gate(qc::Ref{QkCircuit}, gate::QkGate, qubits::AbstractVecto
     end
     qubits0 = Vector{UInt32}(qubits .- offset)
     if params === nothing || length(params) == 0
-        check_exit_code(@ccall libqiskit.qk_circuit_gate(qc::Ref{QkCircuit}, gate::QkGate, qubits0::Ref{UInt32}, C_NULL::Ptr{Cdouble})::QkExitCode)
+        check_exit_code(LibQiskit.qk_circuit_gate(qc, gate, pointer(qubits0), Ptr{Cdouble}(C_NULL)))
     else
-        check_exit_code(@ccall libqiskit.qk_circuit_gate(qc::Ref{QkCircuit}, gate::QkGate, qubits0::Ref{UInt32}, params::Ref{Cdouble})::QkExitCode)
+        params_f64 = Vector{Cdouble}(params)
+        check_exit_code(LibQiskit.qk_circuit_gate(qc, gate, pointer(qubits0), pointer(params_f64)))
     end
     nothing
 end
 
-function qk_circuit_measure(qc::Ref{QkCircuit}, qubit::Integer, clbit::Integer; offset::Int = 1)::Nothing
+function qk_circuit_measure(qc::Ptr{QkCircuit}, qubit::Integer, clbit::Integer; offset::Int = 1)::Nothing
     check_not_null(qc)
     if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubit)
         throw(ArgumentError("Invalid qubit index"))
@@ -126,31 +118,31 @@ function qk_circuit_measure(qc::Ref{QkCircuit}, qubit::Integer, clbit::Integer; 
     end
     qubit0 = qubit - offset
     clbit0 = clbit - offset
-    check_exit_code(@ccall libqiskit.qk_circuit_measure(qc::Ref{QkCircuit}, qubit0::UInt32, clbit0::UInt32)::QkExitCode)
+    check_exit_code(LibQiskit.qk_circuit_measure(qc, UInt32(qubit0), UInt32(clbit0)))
     nothing
 end
 
-function qk_circuit_reset(qc::Ref{QkCircuit}, qubit::Integer; offset::Int = 1)::Nothing
+function qk_circuit_reset(qc::Ptr{QkCircuit}, qubit::Integer; offset::Int = 1)::Nothing
     check_not_null(qc)
     if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubit)
         throw(ArgumentError("Invalid qubit index"))
     end
     qubit0 = qubit - offset
-    check_exit_code(@ccall libqiskit.qk_circuit_reset(qc::Ref{QkCircuit}, qubit0::UInt32)::QkExitCode)
+    check_exit_code(LibQiskit.qk_circuit_reset(qc, UInt32(qubit0)))
     nothing
 end
 
-function qk_circuit_barrier(qc::Ref{QkCircuit}, qubits::AbstractVector{<:Integer}; offset::Int = 1)::Nothing
+function qk_circuit_barrier(qc::Ptr{QkCircuit}, qubits::AbstractVector{<:Integer}; offset::Int = 1)::Nothing
     check_not_null(qc)
     if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
         throw(ArgumentError("Invalid qubit index"))
     end
     qubits0 = Vector{UInt32}(qubits .- offset)
-    check_exit_code(@ccall libqiskit.qk_circuit_barrier(qc::Ref{QkCircuit}, qubits0::Ref{UInt32}, length(qubits)::UInt32)::QkExitCode)
+    check_exit_code(LibQiskit.qk_circuit_barrier(qc, pointer(qubits0), UInt32(length(qubits))))
     nothing
 end
 
-function qk_circuit_unitary(qc::Ref{QkCircuit}, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true, offset::Int = 1)::Nothing
+function qk_circuit_unitary(qc::Ptr{QkCircuit}, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true, offset::Int = 1)::Nothing
     check_not_null(qc)
     if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
         throw(ArgumentError("Invalid qubit index"))
@@ -161,10 +153,10 @@ function qk_circuit_unitary(qc::Ref{QkCircuit}, matrix::AbstractMatrix{<:Number}
         throw(ArgumentError("Matrix must be square and have dimension 2^num_qubits."))
     end
     row_major_matrix = convert(Matrix{ComplexF64}, transpose(matrix))
-    check_exit_code(@ccall libqiskit.qk_circuit_unitary(qc::Ref{QkCircuit}, row_major_matrix::Ref{Complex{Cdouble}}, qubits0::Ref{UInt32}, length(qubits)::UInt32, check_input::Cuchar)::QkExitCode)
+    check_exit_code(LibQiskit.qk_circuit_unitary(qc, Ptr{QkComplex64}(pointer(row_major_matrix)), pointer(qubits0), UInt32(num_qubits), UInt8(check_input)))
 end
 
-function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, unit::QkDelayUnit; offset::Int = 1)::Nothing
+function qk_circuit_delay(qc::Ptr{QkCircuit}, qubit::Integer, duration::Real, unit::QkDelayUnit; offset::Int = 1)::Nothing
     check_not_null(qc)
     if !(duration >= 0)
         throw(ArgumentError("Duration must be non-negative."))
@@ -173,13 +165,13 @@ function qk_circuit_delay(qc::Ref{QkCircuit}, qubit::Integer, duration::Real, un
         throw(ArgumentError("Invalid qubit index"))
     end
     qubit0 = qubit - offset
-    check_exit_code(@ccall libqiskit.qk_circuit_delay(qc::Ref{QkCircuit}, qubit0::UInt32, duration::Float64, unit::UInt8)::QkExitCode)
+    check_exit_code(LibQiskit.qk_circuit_delay(qc, UInt32(qubit0), Cdouble(duration), UInt8(unit)))
     nothing
 end
 
-function qk_circuit_count_ops(qc::Ref{QkCircuit})
+function qk_circuit_count_ops(qc::Ptr{QkCircuit})
     check_not_null(qc)
-    opcounts = Ref(@ccall libqiskit.qk_circuit_count_ops(qc::Ref{QkCircuit})::QkOpCounts)
+    opcounts = Ref(LibQiskit.qk_circuit_count_ops(qc))
     retval = Tuple{String, Int}[]
     try
         sizehint!(retval, opcounts[].len)
@@ -188,7 +180,7 @@ function qk_circuit_count_ops(qc::Ref{QkCircuit})
             push!(retval, (unsafe_string(op_count.name), op_count.count))
         end
     finally
-        @ccall libqiskit.qk_opcounts_clear(opcounts::Ref{QkOpCounts})::Cvoid
+        LibQiskit.qk_opcounts_clear(Base.unsafe_convert(Ptr{QkOpCounts}, opcounts))
     end
     return retval
 end
