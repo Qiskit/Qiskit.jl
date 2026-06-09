@@ -34,6 +34,7 @@ The additional properties are methods:
 - `barrier(qubit1, qubit2, ...)`
 - `unitary(matrix, [qubit1, qubit2, ...])`
 - many [standard gates](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions) corresponding to Qiskit's Python API
+- `delay(qubit, duration::Unitful.Time)` - insert a time delay on `qubit` with specified `duration`
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
@@ -129,8 +130,12 @@ struct UnitaryInstructionClosure
     qc::QuantumCircuit
 end
 
-function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer})::Nothing
-    qk_circuit_unitary!(cl.qc, matrix, qubits)
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
+    qk_circuit_unitary!(cl.qc, matrix, qubits; check_input)
+end
+
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
+    qk_circuit_unitary!(cl.qc, matrix, collect(qubits); check_input)
 end
 
 struct DelayInstructionClosure
@@ -308,8 +313,6 @@ function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
     elseif sym === :
         return GateClosure{QkGate_C3SX}(qc, , )
         =#
-    elseif sym === :unitary
-        throw(NotImplementedError())
     elseif sym === :rcccx
         return GateClosure{QkGate_RC3X}(qc, 4, 0)
     else

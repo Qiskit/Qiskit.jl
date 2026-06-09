@@ -87,6 +87,45 @@
         @test qc.data[3].params == [10.0]
         @test qc.data[4].params == [5.0]
         @test qc.data[5].params == [100.0]
-        @test_throws ArgumentError qc.delay(1, 1 * Unitful.m)
+        @test_throws ArgumentError qc.delay(1, 1 * Unitful.Ms)
+    end
+
+    @testset "Unitary interface" begin
+        qc = QuantumCircuit(3, 0)
+
+        # single-qubit via vector
+        qc.unitary([0 1; 1 0], [1])
+        @test qc.num_instructions == 1
+        @test qc.data[1].name == "unitary"
+        @test qc.data[1].qubits == [1]
+
+        # single-qubit via scalar
+        qc.unitary([0 -im; im 0], 2)
+        @test qc.num_instructions == 2
+        @test qc.data[2].name == "unitary"
+        @test qc.data[2].qubits == [2]
+
+        # two-qubit unitary (CNOT as dense matrix)
+        cnot = [1 0 0 0; 0 0 0 1; 0 0 1 0; 0 1 0 0]
+        qc.unitary(cnot, [1, 2])
+        @test qc.num_instructions == 3
+        @test qc.data[3].name == "unitary"
+        @test qc.data[3].qubits == [1, 2]
+
+        # check_input keyword forwarded
+        non_unitary = [1.0 1.0; 0.0 1.0]
+        qc.unitary(non_unitary, [3]; check_input = false)
+        @test qc.num_instructions == 4
+
+        # check_input=true enforces unitarity; expects clean error, not panic
+        @test_throws ErrorException qc.unitary(non_unitary, [3]; check_input = true)
+        @test qc.num_instructions == 4
+
+        # wrong matrix size throws
+        @test_throws ArgumentError qk_circuit_unitary(qc, [1 0; 0 1], [1, 2])
+
+        # out-of-range qubit throws
+        @test_throws ArgumentError qc.unitary([0 1; 1 0], [4])
+        @test_throws ArgumentError qc.unitary([0 1; 1 0], 4)
     end
 end
