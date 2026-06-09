@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_obs_free, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_zero, qk_obs_len, QkObs
+import .C: qk_obs_free!, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_zero, qk_obs_len, QkObs
 
 """
     SparseObservable
@@ -27,7 +27,7 @@ mutable struct SparseObservable
     """
     function SparseObservable(n::Integer)
         obs = new(qk_obs_zero(n))
-        finalizer(qk_obs_free, obs)
+        finalizer(qk_obs_free!, obs)
         obs
     end
 end
@@ -39,13 +39,15 @@ function check_not_null(qc::Ptr{QkObs})::Nothing
     nothing
 end
 
-function qk_obs_free(obs::SparseObservable)::Nothing
+function qk_obs_free!(obs::SparseObservable)::Nothing
     if obs.ptr != C_NULL
-        qk_obs_free(obs.ptr)
+        qk_obs_free!(obs.ptr)
         obs.ptr = C_NULL
     end
     nothing
 end
+
+@deprecate qk_obs_free(obs) qk_obs_free!(obs)
 
 function qk_obs_num_terms(obs::SparseObservable)::Int
     check_not_null(obs.ptr)
@@ -62,4 +64,5 @@ function qk_obs_len(obs::SparseObservable)::Int
     qk_obs_len(obs.ptr)
 end
 
-export SparseObservable
+export SparseObservable, qk_obs_free!
+

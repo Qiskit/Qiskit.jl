@@ -12,9 +12,11 @@
 
 import .LibQiskit: QkTranspileOptions, QkTranspileLayout, QkTranspileResult
 
-function qk_transpile_layout_free(qc::Ptr{QkTranspileLayout})
+function qk_transpile_layout_free!(qc::Ptr{QkTranspileLayout})
     @ccall libqiskit.qk_transpile_layout_free(qc::Ptr{QkTranspileLayout})::Cvoid
 end
+
+@deprecate qk_transpile_layout_free(qc) qk_transpile_layout_free!(qc)
 
 function check_not_null(ptr::Ptr{QkTranspileLayout})::Nothing
     if ptr == C_NULL
@@ -33,4 +35,5 @@ function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspil
     return result
 end
 
-export qk_transpile, qk_transpile_layout_free
+export qk_transpile, qk_transpile_layout_free, qk_transpile_layout_free!
+

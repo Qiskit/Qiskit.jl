@@ -19,19 +19,23 @@ function check_not_null(obj::Ptr{QkTargetEntry})::Nothing
     nothing
 end
 
-function qk_target_entry_free(obj::Ptr{QkTargetEntry})
+function qk_target_entry_free!(obj::Ptr{QkTargetEntry})
     @ccall libqiskit.qk_target_entry_free(obj::Ptr{QkTargetEntry})::Cvoid
 end
+
+@deprecate qk_target_entry_free(obj) qk_target_entry_free!(obj)
 
 function qk_target_entry_num_properties(obj::Ref{QkTargetEntry})::Int
     check_not_null(obj)
     @ccall libqiskit.qk_target_entry_num_properties(obj::Ref{QkTargetEntry})::Csize_t
 end
 
-function qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
+function qk_target_entry_add_property!(target_entry::Ref{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
     qubits0 = Vector{UInt32}(qubits .- 1)
     check_exit_code(@ccall(libqiskit.qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits0::Ref{UInt32}, length(qubits0)::UInt32, duration::Cdouble, error::Cdouble)::QkExitCode))
 end
+
+@deprecate qk_target_entry_add_property(target_entry, qubits, duration, error) qk_target_entry_add_property!(target_entry, qubits, duration, error)
 
 function check_not_null(obj::Ptr{QkTarget})::Nothing
     if obj == C_NULL
@@ -40,9 +44,11 @@ function check_not_null(obj::Ptr{QkTarget})::Nothing
     nothing
 end
 
-function qk_target_free(obj::Ptr{QkTarget})
+function qk_target_free!(obj::Ptr{QkTarget})
     @ccall libqiskit.qk_target_free(obj::Ptr{QkTarget})::Cvoid
 end
+
+@deprecate qk_target_free(obj) qk_target_free!(obj)
 
 function qk_target_num_qubits(obj::Ref{QkTarget})::Int
     check_not_null(obj)
@@ -54,7 +60,7 @@ function qk_target_num_instructions(obj::Ref{QkTarget})::Int
     @ccall libqiskit.qk_target_num_instructions(obj::Ref{QkTarget})::Csize_t
 end
 
-function qk_target_add_instruction(target::Ref{QkTarget}, entry::Ref{QkTargetEntry})::Nothing
+function qk_target_add_instruction!(target::Ref{QkTarget}, entry::Ref{QkTargetEntry})::Nothing
     # Note: `entry` is no longer valid after calling this method
     check_not_null(target)
     check_not_null(entry)
@@ -62,5 +68,9 @@ function qk_target_add_instruction(target::Ref{QkTarget}, entry::Ref{QkTargetEnt
     nothing
 end
 
+@deprecate qk_target_add_instruction(target, entry) qk_target_add_instruction!(target, entry)
+
 export QkTargetEntry, qk_target_entry_free, qk_target_entry_num_properties, qk_target_entry_add_property
 export QkTarget, qk_target_free, qk_target_num_qubits, qk_target_num_instructions, qk_target_add_instruction
+export qk_target_entry_free!, qk_target_entry_add_property!, qk_target_free!, qk_target_add_instruction!
+

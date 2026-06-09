@@ -16,9 +16,11 @@ function qk_bitterm_label(bit_term::QkBitTerm)::Char
     @ccall libqiskit.qk_bitterm_label(bit_term::UInt8)::UInt8
 end
 
-function qk_obs_free(obs::Ptr{QkObs})
+function qk_obs_free!(obs::Ptr{QkObs})
     @ccall libqiskit.qk_obs_free(obs::Ptr{QkObs})::Cvoid
 end
+
+@deprecate qk_obs_free(obs) qk_obs_free!(obs)
 
 function qk_obs_zero(n::Integer)
     n >= 0 || throw()
@@ -38,6 +40,8 @@ function qk_obs_len(obs::Ptr{QkObs})::Int
 end
 
 export QkBitTerm, qk_bitterm_label, QkObs, qk_obs_free, qk_obs_zero, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_len
+export qk_obs_free!
+
 
 # Export enum instances
 for e in (QkBitTerm,)

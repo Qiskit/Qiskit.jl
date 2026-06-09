@@ -10,8 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: QkTargetEntry, qk_target_entry_free, qk_target_entry_num_properties, qk_target_entry_add_property
-import .C: QkTarget, qk_target_free, qk_target_add_instruction
+import .C: QkTargetEntry, qk_target_entry_free!, qk_target_entry_num_properties, qk_target_entry_add_property!
+import .C: QkTarget, qk_target_free!, qk_target_add_instruction!
 
 """
     TargetEntry
@@ -27,18 +27,20 @@ mutable struct TargetEntry
     function TargetEntry(entry::Ptr{QkTargetEntry})
         check_not_null(entry)
         target_entry = new(entry)
-        finalizer(qk_target_entry_free, target_entry)
+        finalizer(qk_target_entry_free!, target_entry)
         target_entry
     end
 end
 
-function qk_target_entry_free(obj::TargetEntry)::Nothing
+function qk_target_entry_free!(obj::TargetEntry)::Nothing
     if obj.ptr != C_NULL
-        qk_target_entry_free(obj.ptr)
+        qk_target_entry_free!(obj.ptr)
         obj.ptr = C_NULL
     end
     nothing
 end
+
+@deprecate qk_target_entry_free(obj) qk_target_entry_free!(obj)
 
 target_entry_gate(operation::QkGate)::TargetEntry =
     TargetEntry(@ccall(libqiskit.qk_target_entry_new(operation::QkGate)::Ptr{QkTargetEntry}))
@@ -58,7 +60,11 @@ end
 
 qk_target_entry_num_properties(obj::TargetEntry)::Int = qk_target_entry_num_properties(obj.ptr)
 
-qk_target_entry_add_property(target_entry::TargetEntry, args...) = qk_target_entry_add_property(target_entry.ptr, args...)
+function qk_target_entry_add_property!(target_entry::TargetEntry, args...)
+    qk_target_entry_add_property!(target_entry.ptr, args...)
+end
+
+@deprecate qk_target_entry_add_property(target_entry, args...) qk_target_entry_add_property!(target_entry, args...)
 
 function Base.propertynames(obj::TargetEntry; private::Bool = false)
     union(fieldnames(typeof(obj)), (:num_properties,))
@@ -94,25 +100,27 @@ mutable struct Target
         num_qubits >= 0 || throw(ArgumentError("num_qubits must be non-negative."))
         target = new(@ccall(libqiskit.qk_target_new(num_qubits::UInt32)::Ptr{QkTarget}))
         # Take ownership; it's our job to free it eventually
-        finalizer(qk_target_free, target)
+        finalizer(qk_target_free!, target)
         target
     end
     function Target(ptr::Ptr{QkTarget})
         check_not_null(ptr)
         target = new(ptr)
         # Take ownership; it's our job to free it eventually
-        finalizer(qk_target_free, target)
+        finalizer(qk_target_free!, target)
         target
     end
 end
 
-function qk_target_free(obj::Target)::Nothing
+function qk_target_free!(obj::Target)::Nothing
     if obj.ptr != C_NULL
-        qk_target_free(obj.ptr)
+        qk_target_free!(obj.ptr)
         obj.ptr = C_NULL
     end
     nothing
 end
+
+@deprecate qk_target_free(obj) qk_target_free!(obj)
 
 function Base.copy(obj::Target)::Target
     check_not_null(obj.ptr)
@@ -147,12 +155,15 @@ function Base.getproperty(obj::Target, sym::Symbol)
     end
 end
 
-function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
-    qk_target_add_instruction(target.ptr, entry.ptr)
+function qk_target_add_instruction!(target::Target, entry::TargetEntry)::Nothing
+    qk_target_add_instruction!(target.ptr, entry.ptr)
     entry.ptr = C_NULL
     nothing
 end
 
+@deprecate qk_target_add_instruction(target, entry) qk_target_add_instruction!(target, entry)
+
 #qk_target_update_property
 
 @compat public Target, target_entry_gate, target_entry_fixed, target_entry_measure, target_entry_reset
+export qk_target_entry_free!, qk_target_entry_add_property!, qk_target_free!, qk_target_add_instruction!
