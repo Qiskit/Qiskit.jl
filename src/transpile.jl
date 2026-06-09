@@ -72,7 +72,7 @@ execution.
 This function wraps `qk_transpile`, which is multithreaded internally and will
 launch a thread pool with threads equal to the number of CPUs reported by the
 operating system by default. This will include logical cores on CPUs with
-simultaneous multheighteading. You can tune the number of threads with the
+simultaneous multithreading. You can tune the number of threads with the
 `RAYON_NUM_THREADS` environment variable. For example, setting
 `RAYON_NUM_THREADS=4` would limit the thread pool to 4 threads.
 """
