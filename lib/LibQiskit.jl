@@ -217,7 +217,7 @@ struct QkDagNeighbors
 end
 
 struct QkObsTerm
-    coeff::Cint
+    coeff::QkComplex64
     len::Csize_t
     bit_terms::Ptr{QkBitTerm}
     indices::Ptr{UInt32}

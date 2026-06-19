@@ -19,14 +19,6 @@ push!(args, "-I$include_dir")
 push!(args, "-D__cplusplus")
 
 headers = [joinpath(include_dir, "qiskit.h")]
-for header in readdir(qiskit_dir)
-    if endswith(header, ".h")
-        push!(headers, joinpath(qiskit_dir, header))
-    end
-end
-# there is also an experimental `detect_headers` function for auto-detecting top-level headers in the directory
-# headers = detect_headers(qiskit_dir, args)
-
 # create context
 ctx = create_context(headers, args, options)
 
