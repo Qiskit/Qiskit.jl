@@ -11,7 +11,7 @@ struct QkComplex64
 end
 
 function qk_complex64_from_native(arg1)
-    @ccall libqiskit.qk_complex64_from_native(arg1::Cint)::QkComplex64
+    ccall((:qk_complex64_from_native, libqiskit), QkComplex64, (Cint,), arg1)
 end
 
 @cenum QkExitCode::UInt32 begin
@@ -217,7 +217,7 @@ struct QkDagNeighbors
 end
 
 struct QkObsTerm
-    coeff::QkComplex64
+    coeff::Cint
     len::Csize_t
     bit_terms::Ptr{QkBitTerm}
     indices::Ptr{UInt32}
