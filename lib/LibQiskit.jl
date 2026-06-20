@@ -5,20 +5,13 @@ export Qiskit_jll
 
 using CEnum: CEnum, @cenum
 
-mutable struct QkQuantumRegister end
+struct QkComplex64
+    re::Cdouble
+    im::Cdouble
+end
 
-mutable struct QkClassicalRegister end
-
-@cenum QkBitTerm::UInt8 begin
-    QkBitTerm_X = 0x0000000000000002
-    QkBitTerm_Plus = 0x000000000000000a
-    QkBitTerm_Minus = 0x0000000000000006
-    QkBitTerm_Y = 0x0000000000000003
-    QkBitTerm_Right = 0x000000000000000b
-    QkBitTerm_Left = 0x0000000000000007
-    QkBitTerm_Z = 0x0000000000000001
-    QkBitTerm_Zero = 0x0000000000000009
-    QkBitTerm_One = 0x0000000000000005
+function qk_complex64_from_native(arg1)
+    ccall((:qk_complex64_from_native, libqiskit), QkComplex64, (Cint,), arg1)
 end
 
 @cenum QkExitCode::UInt32 begin
@@ -43,14 +36,6 @@ end
     QkExitCode_DagComposeMissingBit = 0x00000000000001f6
     QkExitCode_ParameterError = 0x0000000000000258
     QkExitCode_ParameterNameConflict = 0x0000000000000259
-end
-
-@cenum QkDelayUnit::UInt8 begin
-    QkDelayUnit_S = 0x0000000000000000
-    QkDelayUnit_MS = 0x0000000000000001
-    QkDelayUnit_US = 0x0000000000000002
-    QkDelayUnit_NS = 0x0000000000000003
-    QkDelayUnit_PS = 0x0000000000000004
 end
 
 @cenum QkGate::UInt8 begin
@@ -108,7 +93,69 @@ end
     QkGate_RC3X = 0x0000000000000033
 end
 
+@cenum QkOperationKind::UInt8 begin
+    QkOperationKind_Gate = 0x0000000000000000
+    QkOperationKind_Barrier = 0x0000000000000001
+    QkOperationKind_Delay = 0x0000000000000002
+    QkOperationKind_Measure = 0x0000000000000003
+    QkOperationKind_Reset = 0x0000000000000004
+    QkOperationKind_Unitary = 0x0000000000000005
+    QkOperationKind_PauliProductMeasurement = 0x0000000000000006
+    QkOperationKind_ControlFlow = 0x0000000000000007
+    QkOperationKind_Unknown = 0x0000000000000008
+    QkOperationKind_PauliProductRotation = 0x0000000000000009
+end
+
+@cenum QkDelayUnit::UInt8 begin
+    QkDelayUnit_S = 0x0000000000000000
+    QkDelayUnit_MS = 0x0000000000000001
+    QkDelayUnit_US = 0x0000000000000002
+    QkDelayUnit_NS = 0x0000000000000003
+    QkDelayUnit_PS = 0x0000000000000004
+end
+
+@cenum QkVarsMode::UInt8 begin
+    QkVarsMode_Alike = 0x0000000000000000
+    QkVarsMode_Captures = 0x0000000000000001
+    QkVarsMode_Drop = 0x0000000000000002
+end
+
+@cenum QkBlocksMode::UInt8 begin
+    QkBlocksMode_Drop = 0x0000000000000000
+    QkBlocksMode_Keep = 0x0000000000000001
+end
+
+@cenum QkDagNodeType::UInt8 begin
+    QkDagNodeType_Operation = 0x0000000000000000
+    QkDagNodeType_QubitIn = 0x0000000000000001
+    QkDagNodeType_QubitOut = 0x0000000000000002
+    QkDagNodeType_ClbitIn = 0x0000000000000003
+    QkDagNodeType_ClbitOut = 0x0000000000000004
+    QkDagNodeType_VarIn = 0x0000000000000005
+    QkDagNodeType_VarOut = 0x0000000000000006
+end
+
+@cenum QkBitTerm::UInt8 begin
+    QkBitTerm_X = 0x0000000000000002
+    QkBitTerm_Plus = 0x000000000000000a
+    QkBitTerm_Minus = 0x0000000000000006
+    QkBitTerm_Y = 0x0000000000000003
+    QkBitTerm_Right = 0x000000000000000b
+    QkBitTerm_Left = 0x0000000000000007
+    QkBitTerm_Z = 0x0000000000000001
+    QkBitTerm_Zero = 0x0000000000000009
+    QkBitTerm_One = 0x0000000000000005
+end
+
 mutable struct QkCircuit end
+
+mutable struct QkClassicalRegister end
+
+mutable struct QkDag end
+
+mutable struct QkParam end
+
+mutable struct QkQuantumRegister end
 
 mutable struct QkObs end
 
@@ -118,9 +165,11 @@ mutable struct QkTargetEntry end
 
 mutable struct QkTranspileLayout end
 
-mutable struct QkVF2LayoutResult end
+mutable struct QkTranspilerStageState end
 
-mutable struct QkParam end
+mutable struct QkVF2LayoutConfiguration end
+
+mutable struct QkVF2LayoutResult end
 
 struct QkOpCount
     name::Ptr{Cchar}
@@ -142,16 +191,42 @@ struct QkCircuitInstruction
     num_params::UInt32
 end
 
-struct QkComplex64
-    re::Cdouble
-    im::Cdouble
+struct QkPauliProductRotation
+    z::Ptr{Cint}
+    x::Ptr{Cint}
+    len::Csize_t
+    angle::Ptr{QkParam}
+end
+
+struct QkPauliProductMeasurement
+    z::Ptr{Cint}
+    x::Ptr{Cint}
+    len::Csize_t
+    flip_outcome::Cint
+end
+
+struct QkCircuitDrawerConfig
+    bundle_cregs::Cint
+    merge_wires::Cint
+    fold::Csize_t
+end
+
+struct QkDagNeighbors
+    neighbors::Ptr{UInt32}
+    num_neighbors::Csize_t
 end
 
 struct QkObsTerm
-    coeff::QkComplex64
+    coeff::Cint
     len::Csize_t
     bit_terms::Ptr{QkBitTerm}
     indices::Ptr{UInt32}
+    num_qubits::UInt32
+end
+
+struct QkNeighbors
+    neighbors::Ptr{UInt32}
+    partition::Ptr{Csize_t}
     num_qubits::UInt32
 end
 
@@ -160,6 +235,19 @@ struct QkSabreLayoutOptions
     num_swap_trials::Csize_t
     num_random_trials::Csize_t
     seed::UInt64
+end
+
+struct QkInstructionProperties
+    duration::Cdouble
+    error::Cdouble
+end
+
+struct QkTargetOp
+    op_type::QkOperationKind
+    name::Ptr{Cchar}
+    num_qubits::UInt32
+    params::Ptr{Ptr{QkParam}}
+    num_params::UInt32
 end
 
 struct QkTranspileOptions
@@ -173,9 +261,7 @@ struct QkTranspileResult
     layout::Ptr{QkTranspileLayout}
 end
 
-function qk_complex64_from_native(arg1)
-    ccall((:qk_complex64_from_native, libqiskit), QkComplex64, (Cint,), arg1)
-end
+# Skipping MacroDefinition: Qk_DEPRECATED_FN __attribute__ ( ( deprecated ) )
 
 const QISKIT_RELEASE_LEVEL_DEV = 0x0a
 
