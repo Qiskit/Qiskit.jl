@@ -35,6 +35,10 @@ The additional properties are methods:
 - `unitary(matrix, [qubit1, qubit2, ...])`
 - many [standard gates](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions) corresponding to Qiskit's Python API
 - `delay(qubit, duration::Unitful.Time)` - insert a time delay on `qubit` with specified `duration`
+
+The instruction-appending accessors above (`reset`, `measure`, the gates, etc.)
+return `nothing`. For an idiomatic-Julia interface whose `!`-suffixed functions
+return the circuit, see [`Qiskit.Operations`](@ref).
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
@@ -86,20 +90,191 @@ struct GateClosure{GATE}
 end
 
 function (gc::GateClosure{GATE})(args...) where {GATE}
-    if length(args) != gc.num_qubits + gc.num_params
+    _apply_gate(gc.qc, GATE, Int(gc.num_qubits), Int(gc.num_params), args)
+    # The property-style accessor mirrors Qiskit's Python `qc.h(...)`, which does
+    # not return the circuit, so we return `nothing`. The idiomatic `h!(qc, ...)`
+    # form returns `qc` instead (see the generated functions below).
+    return nothing
+end
+
+# Canonical gate application, shared by the property-style closures and the
+# `!`-suffixed functions in the `Operations` submodule. Arguments are ordered
+# params-first, then qubits (matching Qiskit's Python signatures, e.g.
+# `rz(theta, qubit)`).
+function _apply_gate(qc::QuantumCircuit, gate, num_qubits::Int, num_params::Int, args)
+    if length(args) != num_qubits + num_params
         throw(ArgumentError("Unexpected number of arguments for gate"))
     end
-    params = collect(Float64, args[1:gc.num_params])
-    qubits = collect(Int32, args[gc.num_params+1:end])
-    qk_circuit_gate(gc.qc, GATE, qubits, params)
+    params = collect(Float64, args[1:num_params])
+    qubits = collect(Int32, args[num_params+1:end])
+    qk_circuit_gate(qc, gate, qubits, params)
+    return nothing
 end
+
+# Single source of truth for the standard gates: maps the Julia method name to
+# its C enum value, qubit count, and parameter count. Both the property-style
+# accessors (`qc.h`) and the `Operations.h!` functions are generated from this.
+#
+# The arities are hardcoded here (the C API has no way to query them) but are
+# validated against the C library by a test that builds one instruction per
+# gate and checks the resulting `QkCircuitInstruction` (see test/test_circuit.jl).
+const GATE_TABLE = (
+    (:h,     QkGate_H,      1, 0),
+    (:id,    QkGate_I,      1, 0),
+    (:x,     QkGate_X,      1, 0),
+    (:y,     QkGate_Y,      1, 0),
+    (:z,     QkGate_Z,      1, 0),
+    (:p,     QkGate_Phase,  1, 1),
+    (:r,     QkGate_R,      1, 2),
+    (:rx,    QkGate_RX,     1, 1),
+    (:ry,    QkGate_RY,     1, 1),
+    (:rz,    QkGate_RZ,     1, 1),
+    (:s,     QkGate_S,      1, 0),
+    (:sdg,   QkGate_Sdg,    1, 0),
+    (:sx,    QkGate_SX,     1, 0),
+    (:sxdg,  QkGate_SXdg,   1, 0),
+    (:t,     QkGate_T,      1, 0),
+    (:tdg,   QkGate_Tdg,    1, 0),
+    (:u,     QkGate_U,      1, 3),
+    (:ch,    QkGate_CH,     2, 0),
+    (:cx,    QkGate_CX,     2, 0),
+    (:cy,    QkGate_CY,     2, 0),
+    (:cz,    QkGate_CZ,     2, 0),
+    (:dcx,   QkGate_DCX,    2, 0),
+    (:ecr,   QkGate_ECR,    2, 0),
+    (:swap,  QkGate_Swap,   2, 0),
+    (:iswap, QkGate_ISwap,  2, 0),
+    (:cp,    QkGate_CPhase, 2, 1),
+    (:crx,   QkGate_CRX,    2, 1),
+    (:cry,   QkGate_CRY,    2, 1),
+    (:crz,   QkGate_CRZ,    2, 1),
+    (:cs,    QkGate_CS,     2, 0),
+    (:csdg,  QkGate_CSdg,   2, 0),
+    (:csx,   QkGate_CSX,    2, 0),
+    (:cu,    QkGate_CU,     2, 4),
+    (:rxx,   QkGate_RXX,    2, 1),
+    (:ryy,   QkGate_RYY,    2, 1),
+    (:rzz,   QkGate_RZZ,    2, 1),
+    (:rzx,   QkGate_RZX,    2, 1),
+    (:ccx,   QkGate_CCX,    3, 0),
+    (:ccz,   QkGate_CCZ,    3, 0),
+    (:cswap, QkGate_CSwap,  3, 0),
+    (:rccx,  QkGate_RCCX,   3, 0),
+    (:rcccx, QkGate_RC3X,   4, 0),
+)
+
+# Compile-time dispatch from a gate symbol to its concrete `GateClosure`. When
+# `sym` is a literal (the `qc.h` case), `Val(sym)` is a constant type and this
+# resolves to a single concrete method, so the gate stays a type parameter and
+# the lookup folds away at compile time — same optimization as a hardcoded
+# `sym === :h` branch, but generated from `GATE_TABLE`.
+for (name, gate, nq, np) in GATE_TABLE
+    @eval _gate_closure(qc::QuantumCircuit, ::Val{$(QuoteNode(name))}) =
+        GateClosure{$gate}(qc, $nq, $np)
+end
+_gate_closure(::QuantumCircuit, ::Val) = nothing  # not a gate symbol
+
+# Generate the `!`-suffixed gate functions (e.g. `h!`, `cx!`, `rz!`) from the
+# same table. These are the canonical idiomatic-Julia form; `qc.h(...)` builds a
+# `GateClosure` that runs the identical `_apply_gate` path. Arguments are
+# params-first, then qubits, matching the property-style call (`rz!(qc, θ, q)`).
+# Following Julia convention for mutating functions, these return the mutated
+# `qc` (the property-style `qc.h(...)` form returns `nothing`).
+for (name, gate, nq, np) in GATE_TABLE
+    fname = Symbol(name, "!")
+    @eval function $fname(qc::QuantumCircuit, args...)::QuantumCircuit
+        _apply_gate(qc, $gate, $nq, $np, args)
+        return qc
+    end
+end
+
+# The one-off (non-gate) operations are implemented as the canonical `!`
+# functions below, with the mutated `QuantumCircuit` as the first argument.
+# These are the same functions exported (opt-in) by the `Operations` submodule;
+# the property-style closures (`qc.reset(...)`) forward into them, so there is
+# exactly one implementation per operation. The Unitful extension adds a
+# `delay!` method rather than touching the closure.
+#
+# Following Julia convention for mutating functions, each `!` function returns
+# the mutated `qc`. The corresponding property-style accessor (`qc.reset(...)`)
+# returns `nothing`.
+
+"""
+    reset!(qc::QuantumCircuit, qubit)
+
+Append a reset of `qubit`. Mutates and returns `qc`. Same effect as
+`qc.reset(qubit)`.
+"""
+function reset!(qc::QuantumCircuit, qubit::Integer)::QuantumCircuit
+    qk_circuit_reset(qc, qubit)
+    return qc
+end
+
+"""
+    measure!(qc::QuantumCircuit, qubit, clbit)
+
+Append a measurement of `qubit` into `clbit`. Mutates and returns `qc`. Same
+effect as `qc.measure(qubit, clbit)`.
+"""
+function measure!(qc::QuantumCircuit, qubit::Integer, clbit::Integer)::QuantumCircuit
+    qk_circuit_measure(qc, qubit, clbit)
+    return qc
+end
+
+"""
+    barrier!(qc::QuantumCircuit, qubits...)
+
+Append a barrier across `qubits` (or all qubits if none given). Mutates and
+returns `qc`. Same effect as `qc.barrier(qubits...)`.
+"""
+function barrier!(qc::QuantumCircuit, qubits::Integer...)::QuantumCircuit
+    if isempty(qubits)
+        qubits_vector = collect(Int32, qc.offset:qc.num_qubits+qc.offset-1)
+    else
+        qubits_vector = collect(Int32, qubits)
+    end
+    qk_circuit_barrier(qc, qubits_vector)
+    return qc
+end
+
+"""
+    unitary!(qc::QuantumCircuit, matrix, qubits; check_input=true)
+
+Append a unitary `matrix` acting on `qubits`. Mutates and returns `qc`. Same
+effect as `qc.unitary(matrix, qubits)`.
+"""
+function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::QuantumCircuit
+    qk_circuit_unitary(qc, matrix, qubits; check_input)
+    return qc
+end
+
+function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::QuantumCircuit
+    qk_circuit_unitary(qc, matrix, collect(qubits); check_input)
+    return qc
+end
+
+"""
+    delay!(qc::QuantumCircuit, qubit, duration, unit)
+
+Append a `delay` of `duration` (in `unit`) on `qubit`. Mutates and returns `qc`.
+Same effect as `qc.delay(qubit, duration, unit)`. With Unitful loaded,
+`delay!(qc, qubit, duration::Unitful.Time)` is also available.
+"""
+function delay!(qc::QuantumCircuit, qubit::Integer, duration::Real, unit::QkDelayUnit)::QuantumCircuit
+    qk_circuit_delay(qc, qubit, duration, unit)
+    return qc
+end
+
+# The property-style closures forward to the canonical `!` functions but return
+# `nothing` (the `!` functions return `qc`); see the comment above `reset!`.
 
 struct ResetInstructionClosure
     qc::QuantumCircuit
 end
 
 function (cl::ResetInstructionClosure)(qubit::Integer)::Nothing
-    qk_circuit_reset(cl.qc, qubit)
+    reset!(cl.qc, qubit)
+    return nothing
 end
 
 struct MeasureInstructionClosure
@@ -107,7 +282,8 @@ struct MeasureInstructionClosure
 end
 
 function (cl::MeasureInstructionClosure)(qubit::Integer, clbit::Integer)::Nothing
-    qk_circuit_measure(cl.qc, qubit, clbit)
+    measure!(cl.qc, qubit, clbit)
+    return nothing
 end
 
 struct BarrierInstructionClosure
@@ -115,13 +291,8 @@ struct BarrierInstructionClosure
 end
 
 function (cl::BarrierInstructionClosure)(qubits::Integer...)::Nothing
-    qc = cl.qc
-    if isempty(qubits)
-        qubits_vector = collect(Int32, qc.offset:qc.num_qubits+qc.offset-1)
-    else
-        qubits_vector = collect(Int32, qubits)
-    end
-    qk_circuit_barrier(qc, qubits_vector)
+    barrier!(cl.qc, qubits...)
+    return nothing
 end
 
 struct UnitaryInstructionClosure
@@ -129,11 +300,13 @@ struct UnitaryInstructionClosure
 end
 
 function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
-    qk_circuit_unitary(cl.qc, matrix, qubits; check_input)
+    unitary!(cl.qc, matrix, qubits; check_input)
+    return nothing
 end
 
 function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
-    qk_circuit_unitary(cl.qc, matrix, collect(qubits); check_input)
+    unitary!(cl.qc, matrix, qubits...; check_input)
+    return nothing
 end
 
 struct DelayInstructionClosure
@@ -141,7 +314,8 @@ struct DelayInstructionClosure
 end
 
 function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing
-    qk_circuit_delay(cl.qc, qubit, duration, unit)
+    delay!(cl.qc, qubit, duration, unit)
+    return nothing
 end
 
 struct CountOpsClosure
@@ -192,8 +366,14 @@ function Base.iterate(qcdata::QuantumCircuitData, state)
     end
 end
 
+# Non-gate properties and pseudo-method accessors, kept as an explicit tuple so
+# `propertynames` can advertise them. Gate names are appended from `GATE_TABLE`.
+const _NONGATE_PROPERTIES =
+    (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops,
+     :reset, :measure, :barrier, :delay, :unitary)
+
 function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
-    union(fieldnames(typeof(obj)), (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops, :reset, :measure, :barrier, :delay, :unitary, :h, :id, :x, :y, :z, :p, :r, :rx, :ry, :rz, :s, :sdg, :sx, :sxdg, :t, :tdg, :u, :ch, :cx, :cy, :cz, :dcx, :ecr, :swap, :iswap, :cp, :crx, :cry, :crz, :cs, :csdg, :csx, :cu, :rxx, :ryy, :rzz, :rzx, :ccx, :ccz, :cswap, :rccx, :unitary, :rcccx))
+    union(fieldnames(typeof(obj)), _NONGATE_PROPERTIES, map(first, GATE_TABLE))
 end
 
 function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
@@ -217,104 +397,9 @@ function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
         return DelayInstructionClosure(qc)
     elseif sym === :unitary
         return UnitaryInstructionClosure(qc)
-    elseif sym === :h
-        return GateClosure{QkGate_H}(qc, 1, 0)
-    elseif sym === :id
-        return GateClosure{QkGate_I}(qc, 1, 0)
-    elseif sym === :x
-        return GateClosure{QkGate_X}(qc, 1, 0)
-    elseif sym === :y
-        return GateClosure{QkGate_Y}(qc, 1, 0)
-    elseif sym === :z
-        return GateClosure{QkGate_Z}(qc, 1, 0)
-    elseif sym === :p
-        return GateClosure{QkGate_Phase}(qc, 1, 1)
-    elseif sym === :r
-        return GateClosure{QkGate_R}(qc, 1, 2)
-    elseif sym === :rx
-        return GateClosure{QkGate_RX}(qc, 1, 1)
-    elseif sym === :ry
-        return GateClosure{QkGate_RY}(qc, 1, 1)
-    elseif sym === :rz
-        return GateClosure{QkGate_RZ}(qc, 1, 1)
-    elseif sym === :s
-        return GateClosure{QkGate_S}(qc, 1, 0)
-    elseif sym === :sdg
-        return GateClosure{QkGate_Sdg}(qc, 1, 0)
-    elseif sym === :sx
-        return GateClosure{QkGate_SX}(qc, 1, 0)
-    elseif sym === :sxdg
-        return GateClosure{QkGate_SXdg}(qc, 1, 0)
-    elseif sym === :t
-        return GateClosure{QkGate_T}(qc, 1, 0)
-    elseif sym === :tdg
-        return GateClosure{QkGate_Tdg}(qc, 1, 0)
-    elseif sym === :u
-        return GateClosure{QkGate_U}(qc, 1, 3)
-    elseif sym === :ch
-        return GateClosure{QkGate_CH}(qc, 2, 0)
-    elseif sym === :cx
-        return GateClosure{QkGate_CX}(qc, 2, 0)
-    elseif sym === :cy
-        return GateClosure{QkGate_CY}(qc, 2, 0)
-    elseif sym === :cz
-        return GateClosure{QkGate_CZ}(qc, 2, 0)
-    elseif sym === :dcx
-        return GateClosure{QkGate_DCX}(qc, 2, 0)
-    elseif sym === :ecr
-        return GateClosure{QkGate_ECR}(qc, 2, 0)
-    elseif sym === :swap
-        return GateClosure{QkGate_Swap}(qc, 2, 0)
-    elseif sym === :iswap
-        return GateClosure{QkGate_ISwap}(qc, 2, 0)
-    elseif sym === :cp
-        return GateClosure{QkGate_CPhase}(qc, 2, 1)
-    elseif sym === :crx
-        return GateClosure{QkGate_CRX}(qc, 2, 1)
-    elseif sym === :cry
-        return GateClosure{QkGate_CRY}(qc, 2, 1)
-    elseif sym === :crz
-        return GateClosure{QkGate_CRZ}(qc, 2, 1)
-    elseif sym === :cs
-        return GateClosure{QkGate_CS}(qc, 2, 0)
-    elseif sym === :csdg
-        return GateClosure{QkGate_CSdg}(qc, 2, 0)
-    elseif sym === :csx
-        return GateClosure{QkGate_CSX}(qc, 2, 0)
-    elseif sym === :cu
-        return GateClosure{QkGate_CU}(qc, 2, 3)
-    elseif sym === :rxx
-        return GateClosure{QkGate_RXX}(qc, 2, 1)
-    elseif sym === :ryy
-        return GateClosure{QkGate_RYY}(qc, 2, 1)
-    elseif sym === :rzz
-        return GateClosure{QkGate_RZZ}(qc, 2, 1)
-    elseif sym === :rzx
-        return GateClosure{QkGate_RZX}(qc, 2, 1)
-        #=
-    elseif sym === :
-        return GateClosure{QkGate_XXMinusYY}(qc, 2, 2)
-    elseif sym === :
-        return GateClosure{QkGate_XXPlusYY}(qc, 2, 2)
-        =#
-    elseif sym === :ccx
-        return GateClosure{QkGate_CCX}(qc, 3, 0)
-    elseif sym === :ccz
-        return GateClosure{QkGate_CCZ}(qc, 3, 0)
-    elseif sym === :cswap
-        return GateClosure{QkGate_CSwap}(qc, 3, 0)
-    elseif sym === :rccx
-        return GateClosure{QkGate_RCCX}(qc, 3, 0)
-        #=
-    elseif sym === :
-        return GateClosure{QkGate_C3X}(qc, , )
-    elseif sym === :
-        return GateClosure{QkGate_C3SX}(qc, , )
-        =#
-    elseif sym === :rcccx
-        return GateClosure{QkGate_RC3X}(qc, 4, 0)
     else
-        return getfield(qc, sym)
+        gate = _gate_closure(qc, Val(sym))
+        return gate === nothing ? getfield(qc, sym) : gate
     end
 end
 
@@ -339,3 +424,39 @@ qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
 
 export QuantumCircuit, CircuitInstruction
 @compat public QuantumCircuitData
+
+"""
+    Qiskit.Operations
+
+Idiomatic-Julia interface for building circuits. Every operation is a
+`!`-suffixed function whose first argument is the `QuantumCircuit` it mutates:
+
+```julia
+using Qiskit
+using Qiskit.Operations   # brings h!, cx!, measure!, reset!, ... into scope
+
+qc = QuantumCircuit(2, 2)
+h!(qc, 1)
+cx!(qc, 1, 2)
+measure!(qc, 1, 1)
+measure!(qc, 2, 2)
+```
+
+These names are *not* re-exported from `Qiskit` itself — generic verbs like
+`measure!` and `reset!` are kept behind this submodule so they only enter your
+namespace if you ask for them. Each function is the same code path as the
+corresponding property-style accessor (`qc.h(1)` ≡ `h!(qc, 1)`).
+"""
+module Operations
+
+import ..Qiskit: reset!, measure!, barrier!, unitary!, delay!, GATE_TABLE
+
+# Re-export the one-offs and every generated gate function from the parent.
+export reset!, measure!, barrier!, unitary!, delay!
+for (name, _, _, _) in GATE_TABLE
+    fname = Symbol(name, "!")
+    @eval import ..Qiskit: $fname
+    @eval export $fname
+end
+
+end # module Operations
