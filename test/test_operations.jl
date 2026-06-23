@@ -72,6 +72,16 @@ using Qiskit.Operations
         @test [i.name for i in qc_ops.data] == [i.name for i in qc_prop.data]
     end
 
+    @testset "wrong number of arguments to a gate throws" begin
+        qc = QuantumCircuit(2)
+        # `h` takes 1 qubit, 0 params: too few and too many arguments.
+        @test_throws ArgumentError h!(qc)
+        @test_throws ArgumentError h!(qc, 1, 2)
+        @test_throws ArgumentError qc.h(1, 2)
+        # `rz` takes 1 param + 1 qubit (2 arguments): one argument is too few.
+        @test_throws ArgumentError rz!(qc, 0.5)
+    end
+
     @testset "one-off operations" begin
         qc = QuantumCircuit(2, 1)
         barrier!(qc)
