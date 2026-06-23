@@ -35,6 +35,10 @@ The additional properties are methods:
 - `unitary(matrix, [qubit1, qubit2, ...])`
 - many [standard gates](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions) corresponding to Qiskit's Python API
 - `delay(qubit, duration::Unitful.Time)` - insert a time delay on `qubit` with specified `duration`
+
+The instruction-appending accessors above (`reset`, `measure`, the gates, etc.)
+return `nothing`. For an idiomatic-Julia interface whose `!`-suffixed functions
+return the circuit, see [`Qiskit.Operations`](@ref).
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
@@ -87,6 +91,10 @@ end
 
 function (gc::GateClosure{GATE})(args...) where {GATE}
     _apply_gate(gc.qc, GATE, Int(gc.num_qubits), Int(gc.num_params), args)
+    # The property-style accessor mirrors Qiskit's Python `qc.h(...)`, which does
+    # not return the circuit, so we return `nothing`. The idiomatic `h!(qc, ...)`
+    # form returns `qc` instead (see the generated functions below).
+    return nothing
 end
 
 # Canonical gate application, shared by the property-style closures and the
@@ -100,6 +108,7 @@ function _apply_gate(qc::QuantumCircuit, gate, num_qubits::Int, num_params::Int,
     params = collect(Float64, args[1:num_params])
     qubits = collect(Int32, args[num_params+1:end])
     qk_circuit_gate(qc, gate, qubits, params)
+    return nothing
 end
 
 # Single source of truth for the standard gates: maps the Julia method name to
@@ -169,10 +178,13 @@ _gate_closure(::QuantumCircuit, ::Val) = nothing  # not a gate symbol
 # same table. These are the canonical idiomatic-Julia form; `qc.h(...)` builds a
 # `GateClosure` that runs the identical `_apply_gate` path. Arguments are
 # params-first, then qubits, matching the property-style call (`rz!(qc, θ, q)`).
+# Following Julia convention for mutating functions, these return the mutated
+# `qc` (the property-style `qc.h(...)` form returns `nothing`).
 for (name, gate, nq, np) in GATE_TABLE
     fname = Symbol(name, "!")
-    @eval function $fname(qc::QuantumCircuit, args...)
+    @eval function $fname(qc::QuantumCircuit, args...)::QuantumCircuit
         _apply_gate(qc, $gate, $nq, $np, args)
+        return qc
     end
 end
 
@@ -182,101 +194,129 @@ end
 # the property-style closures (`qc.reset(...)`) forward into them, so there is
 # exactly one implementation per operation. The Unitful extension adds a
 # `delay!` method rather than touching the closure.
+#
+# Following Julia convention for mutating functions, each `!` function returns
+# the mutated `qc`. The corresponding property-style accessor (`qc.reset(...)`)
+# returns `nothing`.
 
 """
     reset!(qc::QuantumCircuit, qubit)
 
-Append a reset of `qubit`. Mutates `qc`. Equivalent to `qc.reset(qubit)`.
+Append a reset of `qubit`. Mutates and returns `qc`. Same effect as
+`qc.reset(qubit)`.
 """
-function reset!(qc::QuantumCircuit, qubit::Integer)::Nothing
+function reset!(qc::QuantumCircuit, qubit::Integer)::QuantumCircuit
     qk_circuit_reset(qc, qubit)
+    return qc
 end
 
 """
     measure!(qc::QuantumCircuit, qubit, clbit)
 
-Append a measurement of `qubit` into `clbit`. Mutates `qc`. Equivalent to
-`qc.measure(qubit, clbit)`.
+Append a measurement of `qubit` into `clbit`. Mutates and returns `qc`. Same
+effect as `qc.measure(qubit, clbit)`.
 """
-function measure!(qc::QuantumCircuit, qubit::Integer, clbit::Integer)::Nothing
+function measure!(qc::QuantumCircuit, qubit::Integer, clbit::Integer)::QuantumCircuit
     qk_circuit_measure(qc, qubit, clbit)
+    return qc
 end
 
 """
     barrier!(qc::QuantumCircuit, qubits...)
 
-Append a barrier across `qubits` (or all qubits if none given). Mutates `qc`.
-Equivalent to `qc.barrier(qubits...)`.
+Append a barrier across `qubits` (or all qubits if none given). Mutates and
+returns `qc`. Same effect as `qc.barrier(qubits...)`.
 """
-function barrier!(qc::QuantumCircuit, qubits::Integer...)::Nothing
+function barrier!(qc::QuantumCircuit, qubits::Integer...)::QuantumCircuit
     if isempty(qubits)
         qubits_vector = collect(Int32, qc.offset:qc.num_qubits+qc.offset-1)
     else
         qubits_vector = collect(Int32, qubits)
     end
     qk_circuit_barrier(qc, qubits_vector)
+    return qc
 end
 
 """
     unitary!(qc::QuantumCircuit, matrix, qubits; check_input=true)
 
-Append a unitary `matrix` acting on `qubits`. Mutates `qc`. Equivalent to
-`qc.unitary(matrix, qubits)`.
+Append a unitary `matrix` acting on `qubits`. Mutates and returns `qc`. Same
+effect as `qc.unitary(matrix, qubits)`.
 """
-function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
+function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::QuantumCircuit
     qk_circuit_unitary(qc, matrix, qubits; check_input)
+    return qc
 end
 
-function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
+function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::QuantumCircuit
     qk_circuit_unitary(qc, matrix, collect(qubits); check_input)
+    return qc
 end
 
 """
     delay!(qc::QuantumCircuit, qubit, duration, unit)
 
-Append a `delay` of `duration` (in `unit`) on `qubit`. Mutates `qc`. Equivalent
-to `qc.delay(qubit, duration, unit)`. With Unitful loaded, `delay!(qc, qubit,
-duration::Unitful.Time)` is also available.
+Append a `delay` of `duration` (in `unit`) on `qubit`. Mutates and returns `qc`.
+Same effect as `qc.delay(qubit, duration, unit)`. With Unitful loaded,
+`delay!(qc, qubit, duration::Unitful.Time)` is also available.
 """
-function delay!(qc::QuantumCircuit, qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing
+function delay!(qc::QuantumCircuit, qubit::Integer, duration::Real, unit::QkDelayUnit)::QuantumCircuit
     qk_circuit_delay(qc, qubit, duration, unit)
+    return qc
 end
+
+# The property-style closures forward to the canonical `!` functions but return
+# `nothing` (the `!` functions return `qc`); see the comment above `reset!`.
 
 struct ResetInstructionClosure
     qc::QuantumCircuit
 end
 
-(cl::ResetInstructionClosure)(qubit::Integer)::Nothing = reset!(cl.qc, qubit)
+function (cl::ResetInstructionClosure)(qubit::Integer)::Nothing
+    reset!(cl.qc, qubit)
+    return nothing
+end
 
 struct MeasureInstructionClosure
     qc::QuantumCircuit
 end
 
-(cl::MeasureInstructionClosure)(qubit::Integer, clbit::Integer)::Nothing =
+function (cl::MeasureInstructionClosure)(qubit::Integer, clbit::Integer)::Nothing
     measure!(cl.qc, qubit, clbit)
+    return nothing
+end
 
 struct BarrierInstructionClosure
     qc::QuantumCircuit
 end
 
-(cl::BarrierInstructionClosure)(qubits::Integer...)::Nothing = barrier!(cl.qc, qubits...)
+function (cl::BarrierInstructionClosure)(qubits::Integer...)::Nothing
+    barrier!(cl.qc, qubits...)
+    return nothing
+end
 
 struct UnitaryInstructionClosure
     qc::QuantumCircuit
 end
 
-(cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing =
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
     unitary!(cl.qc, matrix, qubits; check_input)
+    return nothing
+end
 
-(cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing =
+function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
     unitary!(cl.qc, matrix, qubits...; check_input)
+    return nothing
+end
 
 struct DelayInstructionClosure
     qc::QuantumCircuit
 end
 
-(cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing =
+function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing
     delay!(cl.qc, qubit, duration, unit)
+    return nothing
+end
 
 struct CountOpsClosure
     qc::QuantumCircuit

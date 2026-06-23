@@ -47,6 +47,23 @@ using Qiskit.Operations
               ["h", "cx", "barrier", "reset", "measure", "measure"]
     end
 
+    @testset "return values: `!` returns qc, property form returns nothing" begin
+        qc = QuantumCircuit(2, 2)
+        # `!` functions return the mutated circuit.
+        @test h!(qc, 1) === qc
+        @test cx!(qc, 1, 2) === qc
+        @test reset!(qc, 1) === qc
+        @test measure!(qc, 1, 1) === qc
+        @test barrier!(qc) === qc
+        @test unitary!(qc, [0 1; 1 0], [1]) === qc
+        # Property-style accessors return nothing.
+        @test qc.h(1) === nothing
+        @test qc.cx(1, 2) === nothing
+        @test qc.reset(1) === nothing
+        @test qc.measure(1, 1) === nothing
+        @test qc.barrier() === nothing
+    end
+
     @testset "parametric gate argument order (params first, then qubits)" begin
         qc_prop = QuantumCircuit(1)
         qc_prop.rz(0.25, 1)

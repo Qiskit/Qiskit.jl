@@ -36,10 +36,12 @@ measure!(qc, 1, 1)
 measure!(qc, 2, 2)
 ```
 
-`h!(qc, 1)` and `qc.h(1)` are exactly equivalent. The `Operations` names are not
-exported from `Qiskit` itself — you opt in with `using Qiskit.Operations` — so
-generic verbs such as `measure!` and `reset!` only enter your namespace if you
-ask for them. They can also be referenced fully-qualified, e.g. `Qiskit.h!`.
+`h!(qc, 1)` and `qc.h(1)` append the same instruction; following Julia
+convention, the `!` function returns `qc` whereas the property-style form
+returns `nothing`. The `Operations` names are not exported from `Qiskit` itself
+— you opt in with `using Qiskit.Operations` — so generic verbs such as
+`measure!` and `reset!` only enter your namespace if you ask for them. They can
+also be referenced fully-qualified, e.g. `Qiskit.h!`.
 
 Indexing of qubits and clbits starts at one rather than zero, following Julia
 convention.

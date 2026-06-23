@@ -99,10 +99,11 @@ function build_bell()
 end
 ```
 
-`h!(qc, 1)` and `qc.h(1)` are exactly equivalent.  These names are not exported
-from `Qiskit` itself — you opt in with `using Qiskit.Operations` — because
-generic verbs such as `measure!` and `reset!` should only enter your namespace
-if you ask for them.
+`h!(qc, 1)` and `qc.h(1)` append the same instruction; following Julia
+convention, the `!` function returns `qc` whereas the property-style form
+returns `nothing`.  These names are not exported from `Qiskit` itself — you opt
+in with `using Qiskit.Operations` — because generic verbs such as `measure!` and
+`reset!` should only enter your namespace if you ask for them.
 
 More usage examples can be found in the `test/` directory.
 

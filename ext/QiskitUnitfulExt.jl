@@ -5,10 +5,10 @@ import Qiskit: QuantumCircuit, DelayInstructionClosure, delay!
 import Qiskit.C: qk_circuit_delay, QkDelayUnit_S, QkDelayUnit_MS, QkDelayUnit_US, QkDelayUnit_NS, QkDelayUnit_PS
 
 """
-    delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::Nothing
+    delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::QuantumCircuit
 
 Append a delay on `qubit` whose length is given as a Unitful quantity (e.g.
-`1.0u"μs"`). Uses the unit specified by the user. Mutates `qc`.
+`1.0u"μs"`). Uses the unit specified by the user. Mutates and returns `qc`.
 
 # Supported units
 - `s` (seconds)
@@ -19,7 +19,7 @@ Append a delay on `qubit` whose length is given as a Unitful quantity (e.g.
 
 Other units are not supported.
 """
-function delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::Nothing
+function delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::QuantumCircuit
     # Extract the numeric value and unit the user specified
     val = Unitful.ustrip(duration)
     u = Unitful.unit(duration)
@@ -40,11 +40,13 @@ function delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::Not
     end
 
     qk_circuit_delay(qc, qubit, val, qk_unit)
-    return nothing
+    return qc
 end
 
-# Property-style sugar forwards to the canonical `delay!`.
-(cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Time)::Nothing =
+# Property-style sugar forwards to the canonical `delay!` but returns `nothing`.
+function (cl::DelayInstructionClosure)(qubit::Integer, duration::Unitful.Time)::Nothing
     delay!(cl.qc, qubit, duration)
+    return nothing
+end
 
 end
