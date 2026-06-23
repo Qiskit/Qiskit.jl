@@ -10,13 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .LibQiskit: QkGate, QkCircuit, QkDelayUnit, QkOpCount, QkOpCounts
+import .LibQiskit: QkGate, QkCircuit, QkDelayUnit, QkOpCount, QkOpCounts, QkParam
 
 mutable struct QkCircuitInstruction
     name::Cstring
     qubits::Ptr{UInt32}
     clbits::Ptr{UInt32}
-    params::Ptr{Cdouble}
+    params::Ptr{Ptr{QkParam}}
     num_qubits::UInt32
     num_clbits::UInt32
     num_params::UInt32
@@ -79,12 +79,18 @@ function qk_circuit_get_instruction(qc::Ref{QkCircuit}, index::Integer; offset::
     inst = QkCircuitInstruction()
     index0 = index - offset
     @ccall libqiskit.qk_circuit_get_instruction(qc::Ref{QkCircuit}, index0::Csize_t, inst::Ref{QkCircuitInstruction})::Cvoid
+    # In Qiskit 2.4, params is an array of QkParam* pointers.
+    # Extract float values using qk_param_as_real.
+    param_ptrs = unsafe_wrap(Array, inst.params, inst.num_params)
+    params = map(param_ptrs) do p
+        @ccall libqiskit.qk_param_as_real(p::Ptr{QkParam})::Cdouble
+    end
     retval = CircuitInstruction(
         unsafe_string(inst.name),
         unsafe_wrap(Array, inst.qubits, inst.num_qubits) .+ offset,
         unsafe_wrap(Array, inst.clbits, inst.num_clbits) .+ offset,
-        # We need to copy, otherwise the underlying memory is about to be free'd.
-        copy(unsafe_wrap(Array, inst.params, inst.num_params))
+        # We need to copy the params array we built from QkParam pointers.
+        copy(params)
     )
     @ccall libqiskit.qk_circuit_instruction_clear(inst::Ref{QkCircuitInstruction})::Cvoid
     return retval
@@ -207,7 +213,7 @@ function qk_circuit_count_ops(qc::Ref{QkCircuit})
     return retval
 end
 
-export QkGate, QkCircuit, QkDelayUnit
+export QkGate, QkCircuit, QkDelayUnit, QkParam
 export qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops
 export qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay
 export qk_circuit_free!, qk_circuit_gate!, qk_circuit_measure!, qk_circuit_reset!, qk_circuit_barrier!, qk_circuit_unitary!, qk_circuit_delay!

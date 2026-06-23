@@ -46,6 +46,18 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
         throw(ErrorException("Querying an operation that doesn't exist in the Target."))
     elseif code == QkExitCode_TranspilerError
         throw(ErrorException("Transpilation failed."))
+    elseif code == QkExitCode_InvalidOperationKind
+        throw(ErrorException("Invalid operation kind."))
+    elseif code == QkExitCode_DagError
+        throw(ErrorException("DAG operation error."))
+    elseif code == QkExitCode_DagComposeMismatch
+        throw(ErrorException("DAGs have mismatching qubit/clbit amounts during compose."))
+    elseif code == QkExitCode_DagComposeMissingBit
+        throw(ErrorException("One or more bit indices were not found during compose."))
+    elseif code == QkExitCode_ParameterError
+        throw(ErrorException("Error concerning parameter handling."))
+    elseif code == QkExitCode_ParameterNameConflict
+        throw(ErrorException("Parameter name conflict."))
     else
         throw(ErrorException("Unrecognized error code from Qiskit: $code"))
     end
