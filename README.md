@@ -79,6 +79,31 @@ The `QuantumCircuit` type provides a similar interface to Qiskit's Python API, i
 
 One crucial difference between this package and the Python API is that in this package, everything is indexed starting with one rather than zero, since that is the norm in Julia.
 
+### Idiomatic Julia interface (`Qiskit.Operations`)
+
+The `qc.h(1)` form above mirrors Qiskit's Python API.  If you prefer a more
+idiomatic-Julia style, `Qiskit.Operations` provides the same operations as
+`!`-suffixed functions that take the circuit as their first argument:
+
+```julia
+using Qiskit
+using Qiskit.Operations # opt-in: brings h!, cx!, measure!, ... into scope
+
+function build_bell()
+    qc = QuantumCircuit(2, 2)
+    h!(qc, 1)
+    cx!(qc, 1, 2)
+    measure!(qc, 1, 1)
+    measure!(qc, 2, 2)
+    qc
+end
+```
+
+`h!(qc, 1)` and `qc.h(1)` are exactly equivalent.  These names are not exported
+from `Qiskit` itself — you opt in with `using Qiskit.Operations` — because
+generic verbs such as `measure!` and `reset!` should only enter your namespace
+if you ask for them.
+
 More usage examples can be found in the `test/` directory.
 
 ## Status
