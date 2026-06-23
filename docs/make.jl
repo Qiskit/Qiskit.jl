@@ -4,7 +4,7 @@ using Documenter
 DocMeta.setdocmeta!(Qiskit, :DocTestSetup, :(using Qiskit); recursive=true)
 
 makedocs(;
-    modules=[Qiskit],
+    modules=[Qiskit, Qiskit.Operations],
     authors="IBM and its contributors",
     sitename="Qiskit.jl",
     format=Documenter.HTML(;

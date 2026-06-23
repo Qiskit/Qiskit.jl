@@ -32,6 +32,21 @@ using Qiskit.Operations
         @test qc_ops.num_instructions == qc_prop.num_instructions
     end
 
+    @testset "qualified Qiskit.* access without `using Qiskit.Operations`" begin
+        # The `!` functions live in `Qiskit` itself, so they can be used
+        # fully-qualified without bringing the bare names into scope. This
+        # exercises several operation kinds: gates, reset!, measure!, barrier!.
+        qc = QuantumCircuit(2, 2)
+        Qiskit.h!(qc, 1)
+        Qiskit.cx!(qc, 1, 2)
+        Qiskit.barrier!(qc)
+        Qiskit.reset!(qc, 1)
+        Qiskit.measure!(qc, 1, 1)
+        Qiskit.measure!(qc, 2, 2)
+        @test [i.name for i in qc.data] ==
+              ["h", "cx", "barrier", "reset", "measure", "measure"]
+    end
+
     @testset "parametric gate argument order (params first, then qubits)" begin
         qc_prop = QuantumCircuit(1)
         qc_prop.rz(0.25, 1)
