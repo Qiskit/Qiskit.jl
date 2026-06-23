@@ -428,7 +428,7 @@ export QuantumCircuit, CircuitInstruction
 """
     Qiskit.Operations
 
-Opt-in, idiomatic-Julia interface for building circuits. Every operation is a
+Idiomatic-Julia interface for building circuits. Every operation is a
 `!`-suffixed function whose first argument is the `QuantumCircuit` it mutates:
 
 ```julia
