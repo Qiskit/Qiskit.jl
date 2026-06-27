@@ -25,12 +25,11 @@ end
 
 QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 
-function qk_transpile(qc::Ptr{QkCircuit}, target::Ptr{QkTarget})::Ref{QkTranspileResult}
+function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult}
     result = Ref(QkTranspileResult())
-    GC.@preserve result begin
-        exit_code = LibQiskit.qk_transpile(qc, target, Ptr{QkTranspileOptions}(C_NULL), Base.unsafe_convert(Ptr{QkTranspileResult}, result), Ptr{Ptr{Cchar}}(C_NULL))
-    end
-    check_exit_code(exit_code)
+    error_string = Ref{Ptr{Cchar}}(C_NULL)
+    exit_code = LibQiskit.qk_transpile(qc, target, C_NULL, result, error_string)
+    check_exit_code(exit_code, error_string[])
     return result
 end
 

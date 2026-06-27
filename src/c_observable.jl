@@ -13,7 +13,7 @@
 import .LibQiskit: QkBitTerm, QkObs
 
 function qk_bitterm_label(bit_term::QkBitTerm)::Char
-    LibQiskit.qk_bitterm_label(bit_term)
+    Char(LibQiskit.qk_bitterm_label(bit_term))
 end
 
 function qk_obs_free(obs::Ptr{QkObs})
@@ -22,7 +22,7 @@ end
 
 function qk_obs_zero(n::Integer)
     n >= 0 || throw()
-    LibQiskit.qk_obs_zero(UInt32(n))
+    LibQiskit.qk_obs_zero(n)
 end
 
 function qk_obs_num_terms(obs::Ptr{QkObs})::Int

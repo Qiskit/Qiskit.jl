@@ -23,14 +23,14 @@ function qk_target_entry_free(obj::Ptr{QkTargetEntry})
     LibQiskit.qk_target_entry_free(obj)
 end
 
-function qk_target_entry_num_properties(obj::Ptr{QkTargetEntry})::Int
+function qk_target_entry_num_properties(obj::Ref{QkTargetEntry})::Int
     check_not_null(obj)
     Int(LibQiskit.qk_target_entry_num_properties(obj))
 end
 
-function qk_target_entry_add_property(target_entry::Ptr{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
+function qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
     qubits0 = Vector{UInt32}(qubits .- 1)
-    check_exit_code(LibQiskit.qk_target_entry_add_property(target_entry, pointer(qubits0), UInt32(length(qubits0)), Cdouble(duration), Cdouble(error)))
+    check_exit_code(LibQiskit.qk_target_entry_add_property(target_entry, qubits0, length(qubits0), duration, error))
 end
 
 function check_not_null(obj::Ptr{QkTarget})::Nothing
@@ -44,18 +44,17 @@ function qk_target_free(obj::Ptr{QkTarget})
     LibQiskit.qk_target_free(obj)
 end
 
-function qk_target_num_qubits(obj::Ptr{QkTarget})::Int
+function qk_target_num_qubits(obj::Ref{QkTarget})::Int
     check_not_null(obj)
     Int(LibQiskit.qk_target_num_qubits(obj))
 end
 
-function qk_target_num_instructions(obj::Ptr{QkTarget})::Int
+function qk_target_num_instructions(obj::Ref{QkTarget})::Int
     check_not_null(obj)
     Int(LibQiskit.qk_target_num_instructions(obj))
 end
 
-function qk_target_add_instruction(target::Ptr{QkTarget}, entry::Ptr{QkTargetEntry})::Nothing
-    # Note: `entry` is no longer valid after calling this method
+function qk_target_add_instruction(target::Ref{QkTarget}, entry::Ref{QkTargetEntry})::Nothing
     check_not_null(target)
     check_not_null(entry)
     check_exit_code(LibQiskit.qk_target_add_instruction(target, entry))

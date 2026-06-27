@@ -19,10 +19,6 @@ module C
 libdir = joinpath(@__DIR__, "..", "lib")
 include(joinpath(libdir, "LibQiskit.jl"))
 
-using Qiskit_jll
-
-libqiskit = Qiskit_jll.libqiskit
-
 include("c_exit_code.jl")
 include("c_circuit.jl")
 include("c_target.jl")

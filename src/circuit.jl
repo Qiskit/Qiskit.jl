@@ -46,7 +46,7 @@ mutable struct QuantumCircuit
     function QuantumCircuit(num_qubits::Integer = 0, num_clbits::Integer = 0; offset::Int = 1)
         num_qubits >= 0 || throw(ArgumentError("Number of qubits must be non-negative."))
         num_clbits >= 0 || throw(ArgumentError("Number of clbits must be non-negative."))
-        qc = new(C.LibQiskit.qk_circuit_new(UInt32(num_qubits), UInt32(num_clbits)), offset)
+        qc = new(C.LibQiskit.qk_circuit_new(num_qubits, num_clbits), offset)
         # Take ownership; it's our job to free it eventually
         finalizer(qk_circuit_free, qc)
         qc
