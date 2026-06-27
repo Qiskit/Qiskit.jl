@@ -1,0 +1,15 @@
+#pragma clang system_header
+#ifndef _GLIBCXX_COMPLEX
+#define _GLIBCXX_COMPLEX 1
+namespace std {
+  template<typename> class complex;
+  template<>
+  class complex<double> {
+    double _M_value[2];
+  public:
+    complex(double __re = 0.0, double __im = 0.0) : _M_value{__re, __im} {}
+    double real() const { return _M_value[0]; }
+    double imag() const { return _M_value[1]; }
+  };
+}
+#endif
