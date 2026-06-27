@@ -49,13 +49,13 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
     elseif code == QkExitCode_InvalidOperationKind
         throw(ErrorException("Invalid operation kind."))
     elseif code == QkExitCode_DagError
-        throw(ErrorException("DAG operation error."))
+        throw(ErrorException("DAG error."))
     elseif code == QkExitCode_DagComposeMismatch
-        throw(ErrorException("DAGs have mismatching qubit/clbit amounts during compose."))
+        throw(ErrorException("DAG composition mismatch."))
     elseif code == QkExitCode_DagComposeMissingBit
-        throw(ErrorException("One or more bit indices were not found during compose."))
+        throw(ErrorException("DAG composition missing bit."))
     elseif code == QkExitCode_ParameterError
-        throw(ErrorException("Error concerning parameter handling."))
+        throw(ErrorException("Parameter error."))
     elseif code == QkExitCode_ParameterNameConflict
         throw(ErrorException("Parameter name conflict."))
     else

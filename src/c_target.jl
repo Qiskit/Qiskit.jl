@@ -25,7 +25,7 @@ end
 
 function qk_target_entry_num_properties(obj::Ptr{QkTargetEntry})::Int
     check_not_null(obj)
-    LibQiskit.qk_target_entry_num_properties(obj)
+    Int(LibQiskit.qk_target_entry_num_properties(obj))
 end
 
 function qk_target_entry_add_property(target_entry::Ptr{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
@@ -46,12 +46,12 @@ end
 
 function qk_target_num_qubits(obj::Ptr{QkTarget})::Int
     check_not_null(obj)
-    LibQiskit.qk_target_num_qubits(obj)
+    Int(LibQiskit.qk_target_num_qubits(obj))
 end
 
 function qk_target_num_instructions(obj::Ptr{QkTarget})::Int
     check_not_null(obj)
-    LibQiskit.qk_target_num_instructions(obj)
+    Int(LibQiskit.qk_target_num_instructions(obj))
 end
 
 function qk_target_add_instruction(target::Ptr{QkTarget}, entry::Ptr{QkTargetEntry})::Nothing
