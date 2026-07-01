@@ -20,17 +20,17 @@ function check_not_null(obj::Ptr{QkTargetEntry})::Nothing
 end
 
 function qk_target_entry_free(obj::Ptr{QkTargetEntry})
-    @ccall libqiskit.qk_target_entry_free(obj::Ptr{QkTargetEntry})::Cvoid
+    LibQiskit.qk_target_entry_free(obj)
 end
 
 function qk_target_entry_num_properties(obj::Ref{QkTargetEntry})::Int
     check_not_null(obj)
-    @ccall libqiskit.qk_target_entry_num_properties(obj::Ref{QkTargetEntry})::Csize_t
+    Int(LibQiskit.qk_target_entry_num_properties(obj))
 end
 
 function qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits::AbstractVector{<:Integer}, duration::Real, error::Real)::Nothing
     qubits0 = Vector{UInt32}(qubits .- 1)
-    check_exit_code(@ccall(libqiskit.qk_target_entry_add_property(target_entry::Ref{QkTargetEntry}, qubits0::Ref{UInt32}, length(qubits0)::UInt32, duration::Cdouble, error::Cdouble)::QkExitCode))
+    check_exit_code(LibQiskit.qk_target_entry_add_property(target_entry, qubits0, length(qubits0), duration, error))
 end
 
 function check_not_null(obj::Ptr{QkTarget})::Nothing
@@ -41,24 +41,23 @@ function check_not_null(obj::Ptr{QkTarget})::Nothing
 end
 
 function qk_target_free(obj::Ptr{QkTarget})
-    @ccall libqiskit.qk_target_free(obj::Ptr{QkTarget})::Cvoid
+    LibQiskit.qk_target_free(obj)
 end
 
 function qk_target_num_qubits(obj::Ref{QkTarget})::Int
     check_not_null(obj)
-    @ccall libqiskit.qk_target_num_qubits(obj::Ref{QkTarget})::UInt32
+    Int(LibQiskit.qk_target_num_qubits(obj))
 end
 
 function qk_target_num_instructions(obj::Ref{QkTarget})::Int
     check_not_null(obj)
-    @ccall libqiskit.qk_target_num_instructions(obj::Ref{QkTarget})::Csize_t
+    Int(LibQiskit.qk_target_num_instructions(obj))
 end
 
 function qk_target_add_instruction(target::Ref{QkTarget}, entry::Ref{QkTargetEntry})::Nothing
-    # Note: `entry` is no longer valid after calling this method
     check_not_null(target)
     check_not_null(entry)
-    check_exit_code(@ccall libqiskit.qk_target_add_instruction(target::Ref{QkTarget}, entry::Ref{QkTargetEntry})::QkExitCode)
+    check_exit_code(LibQiskit.qk_target_add_instruction(target, entry))
     nothing
 end
 
