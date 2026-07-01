@@ -23,11 +23,9 @@ options = load_options(joinpath(@__DIR__, "generator.toml"))
 
 args = get_default_args()
 push!(args, "-I$include_dir")
-
-# XXX: C++ mode is a hack but necessary in order to avoid an error about the QkGate
+ XXX: this is a hack but necessary in order to avoid an error about the QkGate
 # enum being defined as two different things.  See upstream PR at
 # https://github.com/mozilla/cbindgen/pull/1156
-# C++ mode also activates `extern "C"` blocks around function declarations (handled above).
 # We also need a stub <complex> header since qiskit/complex.h includes it in C++ mode.
 stub_dir = joinpath(@__DIR__, "stub_cxx")
 mkpath(stub_dir)
@@ -55,7 +53,6 @@ push!(args, "-nostdinc++")
 push!(args, "-isystem$stub_dir")
 push!(args, "-D__cplusplus")
 
-# Only parse the top-level qiskit.h — it transitively includes everything we need.
 headers = [joinpath(include_dir, "qiskit.h")]
 
 # create context
