@@ -23,7 +23,7 @@ options = load_options(joinpath(@__DIR__, "generator.toml"))
 
 args = get_default_args()
 push!(args, "-I$include_dir")
- XXX: this is a hack but necessary in order to avoid an error about the QkGate
+# XXX: this is a hack but necessary in order to avoid an error about the QkGate
 # enum being defined as two different things.  See upstream PR at
 # https://github.com/mozilla/cbindgen/pull/1156
 # We also need a stub <complex> header since qiskit/complex.h includes it in C++ mode.
