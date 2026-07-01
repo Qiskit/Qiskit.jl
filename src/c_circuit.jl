@@ -74,7 +74,7 @@ function qk_circuit_get_instruction(qc::Ref{QkCircuit}, index::Integer; offset::
         unsafe_string(inst.name),
         unsafe_wrap(Array, inst.qubits, inst.num_qubits) .+ offset,
         unsafe_wrap(Array, inst.clbits, inst.num_clbits) .+ offset,
-        copy(params)
+        params
     )
     LibQiskit.qk_circuit_instruction_clear(inst_ref)
     return retval

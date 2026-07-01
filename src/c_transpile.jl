@@ -29,7 +29,11 @@ function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspil
     result = Ref(QkTranspileResult())
     error_string = Ref{Ptr{Cchar}}(C_NULL)
     exit_code = LibQiskit.qk_transpile(qc, target, C_NULL, result, error_string)
-    check_exit_code(exit_code, error_string[])
+    try
+        check_exit_code(exit_code, error_string[])
+    finally
+        LibQiskit.qk_str_free(error_string[])
+    end
     return result
 end
 

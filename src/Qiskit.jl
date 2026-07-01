@@ -27,6 +27,8 @@ include("c_observable.jl")
 
 end # module C
 
+import .C: LibQiskit
+
 include("circuit.jl")
 include("target.jl")
 include("transpile.jl")

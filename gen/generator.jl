@@ -9,10 +9,8 @@ cd(@__DIR__)
 include_dir = normpath(Qiskit_jll.artifact_dir, "include")
 qiskit_dir = joinpath(include_dir, "qiskit")
 
-# Clang.jl cannot handle `extern "C"` blocks (CLLinkageSpec cursors), but the
-# cbindgen-generated headers activate these with -D__cplusplus, which is needed
-# to avoid the C idiom "typedef uint8_t EnumName" conflicting with "enum EnumName".
-# Descend into linkage-spec children so declarations inside extern "C" are found.
+# Clang.jl cannot handle `extern "C"` blocks (CLLinkageSpec cursors), so we
+# descend into linkage-spec children to find declarations inside them.
 function collect_top_level_nodes!(nodes::Vector{Generators.ExprNode}, cursor::CLLinkageSpec, options::Dict)
     for child in children(cursor)
         collect_top_level_nodes!(nodes, child, options)
@@ -23,9 +21,13 @@ end
 # wrapper generator options
 options = load_options(joinpath(@__DIR__, "generator.toml"))
 
-# Use C++ mode so that the cbindgen-generated headers use proper enum typedefs
-# (i.e. `enum X : uint8_t { ... };` with no separate `typedef uint8_t X`).
-# C++ mode activates `extern "C"` blocks around function declarations (handled above).
+args = get_default_args()
+push!(args, "-I$include_dir")
+
+# XXX: C++ mode is a hack but necessary in order to avoid an error about the QkGate
+# enum being defined as two different things.  See upstream PR at
+# https://github.com/mozilla/cbindgen/pull/1156
+# C++ mode also activates `extern "C"` blocks around function declarations (handled above).
 # We also need a stub <complex> header since qiskit/complex.h includes it in C++ mode.
 stub_dir = joinpath(@__DIR__, "stub_cxx")
 mkpath(stub_dir)
@@ -47,8 +49,6 @@ write(joinpath(stub_dir, "complex"),
     }
     #endif
     """)
-args = get_default_args()
-push!(args, "-I$include_dir")
 push!(args, "-x", "c++")
 push!(args, "-std=c++11")
 push!(args, "-nostdinc++")
