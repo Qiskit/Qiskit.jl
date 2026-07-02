@@ -44,7 +44,7 @@ end
 
 function Base.show(io::IO, obj::TranspileLayout)
     if obj.ptr == C_NULL
-        print(io, "TranspileLayout(NULL)")
+        print(io, "TranspileLayout()")
     else
         print(io, "TranspileLayout(...)")
     end

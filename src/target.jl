@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 import .C: QkTargetEntry, qk_target_entry_free, qk_target_entry_num_properties, qk_target_entry_add_property
-import .C: QkTarget, qk_target_free, qk_target_add_instruction
+import .C: QkTarget, qk_target_free, qk_target_num_qubits, qk_target_num_instructions, qk_target_add_instruction
 
 """
     TargetEntry
@@ -74,7 +74,7 @@ end
 
 function Base.show(io::IO, obj::TargetEntry)
     if obj.ptr == C_NULL
-        print(io, "TargetEntry(NULL)")
+        print(io, "TargetEntry()")
     else
         print(io, "TargetEntry(num_properties=$(qk_target_entry_num_properties(obj)))")
     end
