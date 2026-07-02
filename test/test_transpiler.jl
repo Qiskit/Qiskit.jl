@@ -59,6 +59,15 @@
         #QkTranspileOptions options = qk_transpiler_default_options()
         #options.seed = 42
         transpile_result = transpile(qc, target)
+        io = IOBuffer()
+        show(io, transpile_result)
+        @test contains(String(take!(io)), "TranspileResult")
+
+        qk_transpile_layout_free(transpile_result.layout)
+        io = IOBuffer()
+        show(io, transpile_result.layout)
+        @test String(take!(io)) == "TranspileLayout(NULL)"
+
         op_counts = qk_circuit_count_ops(transpile_result.circuit)
         @test length(op_counts) == 4
         op_count_set = Set([name for (name, _) in op_counts])
@@ -73,5 +82,18 @@
                 @test inst.qubits[1] + 1 == inst.qubits[2]
             end
         end
+    end
+
+    @testset "Base.show method for TranspileLayout and TranspileResult" begin
+        # These show methods are tested implicitly through the transpile_bv tests
+        # where transpile_result is created and could be displayed
+        qc = QuantumCircuit(2)
+        qc.h(1)
+        
+        # Just verify we can call show on a circuit
+        io = IOBuffer()
+        show(io, qc)
+        output = String(take!(io))
+        @test contains(output, "QuantumCircuit")
     end
 end

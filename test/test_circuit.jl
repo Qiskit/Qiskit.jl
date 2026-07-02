@@ -69,6 +69,37 @@
         @test qk_circuit_get_instruction(qc, 2).params == [4.0]
         @test qk_circuit_get_instruction(qc, 5).clbits == [0]
     end
+
+    @testset "Base.show method" begin
+        qc = QuantumCircuit(2, 1)
+        io = IOBuffer()
+        show(io, qc)
+        output = String(take!(io))
+        @test contains(output, "QuantumCircuit")
+        @test contains(output, "num_qubits=2")
+        @test contains(output, "num_clbits=1")
+        @test contains(output, "num_instructions=0")
+
+        # Test with instructions
+        qc.h(1)
+        io = IOBuffer()
+        show(io, qc)
+        output = String(take!(io))
+        @test contains(output, "num_instructions=1")
+
+        # Test with empty circuit (offset=0)
+        qc_zero = QuantumCircuit(3, 0, offset=0)
+        io = IOBuffer()
+        show(io, qc_zero)
+        output = String(take!(io))
+        @test contains(output, "QuantumCircuit")
+        @test contains(output, "num_qubits=3")
+
+        qk_circuit_free(qc_zero)
+        io = IOBuffer()
+        show(io, qc_zero)
+        @test String(take!(io)) == "QuantumCircuit(NULL)"
+    end
     
     @testset "Unitful support" begin
         qc = QuantumCircuit(4, 0)

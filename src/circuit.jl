@@ -376,6 +376,14 @@ function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
     union(fieldnames(typeof(obj)), _NONGATE_PROPERTIES, map(first, GATE_TABLE))
 end
 
+function Base.show(io::IO, qc::QuantumCircuit)
+    if qc.ptr == C_NULL
+        print(io, "QuantumCircuit(NULL)")
+    else
+        print(io, "QuantumCircuit(num_qubits=$(qc.num_qubits), num_clbits=$(qc.num_clbits), num_instructions=$(qc.num_instructions))")
+    end
+end
+
 function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
     if sym === :data
         return QuantumCircuitData(qc)

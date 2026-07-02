@@ -25,3 +25,25 @@ obs = SparseObservable(5)
     @test qk_bitterm_label(QkBitTerm_Zero) == '0'
     @test qk_bitterm_label(QkBitTerm_One) == '1'
 end
+
+@testset "Base.show method" begin
+    obs = SparseObservable(3)
+    io = IOBuffer()
+    show(io, obs)
+    output = String(take!(io))
+    @test contains(output, "SparseObservable")
+    @test contains(output, "num_qubits=3")
+    @test contains(output, "num_terms=0")
+
+    # Test with different qubit count
+    obs5 = SparseObservable(5)
+    io = IOBuffer()
+    show(io, obs5)
+    output = String(take!(io))
+    @test contains(output, "num_qubits=5")
+
+    qk_obs_free(obs5)
+    io = IOBuffer()
+    show(io, obs5)
+    @test String(take!(io)) == "SparseObservable(NULL)"
+end
