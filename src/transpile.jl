@@ -67,6 +67,13 @@ function Base.show(io::IO, result::TranspileResult)
     print(io, ")")
 end
 
+function Base.show(io::IO, ::MIME"text/plain", result::TranspileResult)
+    print(io, "TranspileResult:\n  circuit: ")
+    show(io, result.circuit)
+    print(io, "\n  layout:  ")
+    show(io, result.layout)
+end
+
 function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
     result_ref = qk_transpile(qc.ptr, target.ptr)
     circuit = QuantumCircuit(result_ref[].circuit)

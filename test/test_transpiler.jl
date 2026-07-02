@@ -84,16 +84,32 @@
         end
     end
 
-    @testset "Base.show method for TranspileLayout and TranspileResult" begin
-        # These show methods are tested implicitly through the transpile_bv tests
-        # where transpile_result is created and could be displayed
+    @testset "Base.show for TranspileResult and TranspileLayout" begin
         qc = QuantumCircuit(2)
         qc.h(1)
-        
-        # Just verify we can call show on a circuit
+        target = Qiskit.Target(2)
+        result = transpile(qc, target)
+
+        # Compact show (used when nested inside another object's display)
         io = IOBuffer()
-        show(io, qc)
+        show(io, result)
         output = String(take!(io))
-        @test contains(output, "QuantumCircuit")
+        @test startswith(output, "TranspileResult()")
+        @test contains(output, "QuantumCircuit()")
+        @test contains(output, "TranspileLayout()")
+
+        # text/plain form for REPL display
+        io = IOBuffer()
+        show(io, MIME"text/plain"(), result)
+        output = String(take!(io))
+        @test startswith(output, "TranspileResult:")
+        @test contains(output, "circuit:")
+        @test contains(output, "layout:")
+
+        # TranspileLayout NULL path (after ownership is transferred)
+        qk_transpile_layout_free(result.layout)
+        io = IOBuffer()
+        show(io, result.layout)
+        @test String(take!(io)) == "TranspileLayout(NULL)"
     end
 end

@@ -14,35 +14,43 @@
     target = Qiskit.Target(4)
     target2 = copy(target)
 
-    @testset "Base.show method for Target" begin
+    @testset "Base.show for Target" begin
+        # Compact form
         io = IOBuffer()
         show(io, target)
-        output = String(take!(io))
-        @test contains(output, "Target")
-        @test contains(output, "num_qubits=4")
-        @test contains(output, "num_instructions=0")
+        @test String(take!(io)) == "Target(4; 0 instructions)"
 
-        # Test with different qubit count
-        target10 = Qiskit.Target(10)
+        # text/plain form for REPL display
         io = IOBuffer()
-        show(io, target10)
+        show(io, MIME"text/plain"(), target)
         output = String(take!(io))
-        @test contains(output, "num_qubits=10")
+        @test startswith(output, "Target with 4 qubits")
+        @test contains(output, "instructions: 0")
 
+        # NULL path
+        target10 = Qiskit.Target(10)
         qk_target_free(target10)
         io = IOBuffer()
         show(io, target10)
-        @test String(take!(io)) == "Target()"
+        @test String(take!(io)) == "Target(NULL)"
     end
 
-    @testset "Base.show method for TargetEntry" begin
+    @testset "Base.show for TargetEntry" begin
         entry = Qiskit.target_entry_gate(QkGate_X)
+
+        # Compact form: no positional constructor args, so annotation only
         io = IOBuffer()
         show(io, entry)
-        output = String(take!(io))
-        @test contains(output, "TargetEntry")
-        @test contains(output, "num_properties")
+        @test String(take!(io)) == "TargetEntry(; 0 properties)"
 
+        # text/plain form
+        io = IOBuffer()
+        show(io, MIME"text/plain"(), entry)
+        output = String(take!(io))
+        @test startswith(output, "TargetEntry")
+        @test contains(output, "properties: 0")
+
+        # NULL path
         qk_target_entry_free(entry)
         io = IOBuffer()
         show(io, entry)

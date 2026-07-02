@@ -70,31 +70,30 @@
         @test qk_circuit_get_instruction(qc, 5).clbits == [0]
     end
 
-    @testset "Base.show method" begin
+    @testset "Base.show" begin
         qc = QuantumCircuit(2, 1)
+
+        # Compact form: positional constructor args, instruction count annotated after `;`
         io = IOBuffer()
         show(io, qc)
         output = String(take!(io))
-        @test contains(output, "QuantumCircuit")
-        @test contains(output, "num_qubits=2")
-        @test contains(output, "num_clbits=1")
-        @test contains(output, "num_instructions=0")
+        @test output == "QuantumCircuit(2, 1; 0 instructions)"
 
-        # Test with instructions
+        # Compact form reflects current instruction count
         qc.h(1)
         io = IOBuffer()
         show(io, qc)
-        output = String(take!(io))
-        @test contains(output, "num_instructions=1")
+        @test String(take!(io)) == "QuantumCircuit(2, 1; 1 instructions)"
 
-        # Test with empty circuit (offset=0)
-        qc_zero = QuantumCircuit(3, 0, offset=0)
+        # text/plain form for REPL display
         io = IOBuffer()
-        show(io, qc_zero)
+        show(io, MIME"text/plain"(), qc)
         output = String(take!(io))
-        @test contains(output, "QuantumCircuit")
-        @test contains(output, "num_qubits=3")
+        @test startswith(output, "QuantumCircuit with 2 qubits, 1 clbits")
+        @test contains(output, "instructions: 1")
 
+        # NULL path (after explicit free)
+        qc_zero = QuantumCircuit(3, 0, offset=0)
         qk_circuit_free(qc_zero)
         io = IOBuffer()
         show(io, qc_zero)

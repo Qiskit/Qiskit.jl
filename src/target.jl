@@ -76,7 +76,15 @@ function Base.show(io::IO, obj::TargetEntry)
     if obj.ptr == C_NULL
         print(io, "TargetEntry(NULL)")
     else
-        print(io, "TargetEntry(num_properties=$(qk_target_entry_num_properties(obj)))")
+        print(io, "TargetEntry(; $(qk_target_entry_num_properties(obj)) properties)")
+    end
+end
+
+function Base.show(io::IO, ::MIME"text/plain", obj::TargetEntry)
+    if obj.ptr == C_NULL
+        print(io, "TargetEntry(NULL)")
+    else
+        print(io, "TargetEntry\n  properties: $(qk_target_entry_num_properties(obj))")
     end
 end
 
@@ -157,9 +165,17 @@ end
 
 function Base.show(io::IO, obj::Target)
     if obj.ptr == C_NULL
-        print(io, "Target()")
+        print(io, "Target(NULL)")
     else
-        print(io, "Target(num_qubits=$(qk_target_num_qubits(obj)), num_instructions=$(qk_target_num_instructions(obj)))")
+        print(io, "Target($(qk_target_num_qubits(obj)); $(qk_target_num_instructions(obj)) instructions)")
+    end
+end
+
+function Base.show(io::IO, ::MIME"text/plain", obj::Target)
+    if obj.ptr == C_NULL
+        print(io, "Target(NULL)")
+    else
+        print(io, "Target with $(qk_target_num_qubits(obj)) qubits\n  instructions: $(qk_target_num_instructions(obj))")
     end
 end
 
