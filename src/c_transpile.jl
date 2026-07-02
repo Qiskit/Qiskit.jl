@@ -13,7 +13,7 @@
 import .LibQiskit: QkTranspileOptions, QkTranspileLayout, QkTranspileResult
 
 function qk_transpile_layout_free(qc::Ptr{QkTranspileLayout})
-    @ccall libqiskit.qk_transpile_layout_free(qc::Ptr{QkTranspileLayout})::Cvoid
+    LibQiskit.qk_transpile_layout_free(qc)
 end
 
 function check_not_null(ptr::Ptr{QkTranspileLayout})::Nothing
@@ -27,9 +27,13 @@ QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 
 function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult}
     result = Ref(QkTranspileResult())
-    error_string = Ptr{Cchar}(C_NULL)
-    exit_code = @ccall libqiskit.qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget}, C_NULL::Ptr{QkTranspileOptions}, result::Ref{QkTranspileResult}, error_string::Ref{Ptr{Cchar}})::QkExitCode
-    check_exit_code(exit_code, error_string)
+    error_string = Ref{Ptr{Cchar}}(C_NULL)
+    exit_code = LibQiskit.qk_transpile(qc, target, C_NULL, result, error_string)
+    try
+        check_exit_code(exit_code, error_string[])
+    finally
+        LibQiskit.qk_str_free(error_string[])
+    end
     return result
 end
 

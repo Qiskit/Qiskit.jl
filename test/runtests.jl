@@ -21,7 +21,17 @@ using Unitful
         Aqua.test_all(Qiskit)
     end
     include("test_circuit.jl")
+    include("test_operations.jl")
     include("test_target.jl")
     include("test_transpiler.jl")
     include("test_observable.jl")
+
+    # The wrapper types (`QuantumCircuit`, `Target`, `TargetEntry`,
+    # `SparseObservable`, transpile layouts) register finalizers that call the
+    # corresponding `qk_*_free` C functions. Those finalizer bodies only run
+    # when the garbage collector reclaims the objects, which is nondeterministic
+    # and may not happen before the test process exits — leaving the free paths
+    # showing as uncovered (and inconsistently so across CI matrix jobs). Force
+    # a collection here so the finalizers run deterministically.
+    GC.gc()
 end
