@@ -64,7 +64,7 @@ end
 
 function Base.show(io::IO, obs::SparseObservable)
     if obs.ptr == C_NULL
-        print(io, "SparseObservable()")
+        print(io, "SparseObservable(NULL)")
     else
         print(io, "SparseObservable(num_qubits=$(qk_obs_num_qubits(obs)), num_terms=$(qk_obs_num_terms(obs)))")
     end

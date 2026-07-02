@@ -198,7 +198,7 @@ end
 
 function Base.show(io::IO, qc::QuantumCircuit)
     if qc.ptr == C_NULL
-        print(io, "QuantumCircuit()")
+        print(io, "QuantumCircuit(NULL)")
     else
         print(io, "QuantumCircuit(num_qubits=$(qc.num_qubits), num_clbits=$(qc.num_clbits), num_instructions=$(qc.num_instructions))")
     end

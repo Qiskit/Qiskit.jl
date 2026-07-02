@@ -74,7 +74,7 @@ end
 
 function Base.show(io::IO, obj::TargetEntry)
     if obj.ptr == C_NULL
-        print(io, "TargetEntry()")
+        print(io, "TargetEntry(NULL)")
     else
         print(io, "TargetEntry(num_properties=$(qk_target_entry_num_properties(obj)))")
     end

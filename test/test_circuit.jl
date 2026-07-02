@@ -98,7 +98,7 @@
         qk_circuit_free(qc_zero)
         io = IOBuffer()
         show(io, qc_zero)
-        @test String(take!(io)) == "QuantumCircuit()"
+        @test String(take!(io)) == "QuantumCircuit(NULL)"
     end
     
     @testset "Unitful support" begin

@@ -45,5 +45,5 @@ end
     qk_obs_free(obs5)
     io = IOBuffer()
     show(io, obs5)
-    @test String(take!(io)) == "SparseObservable()"
+    @test String(take!(io)) == "SparseObservable(NULL)"
 end

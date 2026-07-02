@@ -66,7 +66,7 @@
         qk_transpile_layout_free(transpile_result.layout)
         io = IOBuffer()
         show(io, transpile_result.layout)
-        @test String(take!(io)) == "TranspileLayout()"
+        @test String(take!(io)) == "TranspileLayout(NULL)"
 
         op_counts = qk_circuit_count_ops(transpile_result.circuit)
         @test length(op_counts) == 4

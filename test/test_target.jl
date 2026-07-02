@@ -46,6 +46,6 @@
         qk_target_entry_free(entry)
         io = IOBuffer()
         show(io, entry)
-        @test String(take!(io)) == "TargetEntry()"
+        @test String(take!(io)) == "TargetEntry(NULL)"
     end
 end
