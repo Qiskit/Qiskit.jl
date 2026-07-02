@@ -85,18 +85,23 @@
     end
 
     @testset "Base.show for TranspileResult and TranspileLayout" begin
+        target = Qiskit.Target(2)
+        h_entry = Qiskit.target_entry_gate(QkGate_H)
+        qk_target_entry_add_property(h_entry, [1], 0.0, 0.0)
+        qk_target_entry_add_property(h_entry, [2], 0.0, 0.0)
+        qk_target_add_instruction(target, h_entry)
+
         qc = QuantumCircuit(2)
         qc.h(1)
-        target = Qiskit.Target(2)
         result = transpile(qc, target)
 
         # Compact show (used when nested inside another object's display)
         io = IOBuffer()
         show(io, result)
         output = String(take!(io))
-        @test startswith(output, "TranspileResult()")
-        @test contains(output, "QuantumCircuit()")
-        @test contains(output, "TranspileLayout()")
+        @test startswith(output, "TranspileResult(")
+        @test contains(output, "QuantumCircuit(")
+        @test contains(output, "TranspileLayout(")
 
         # text/plain form for REPL display
         io = IOBuffer()
