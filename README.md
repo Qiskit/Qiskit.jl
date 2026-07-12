@@ -40,9 +40,9 @@ function build_chain_target(num_qubits)
         for i in 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
-            qk_target_entry_add_property(entry, [i], duration, error)
+            Qiskit.add_property!(entry, [i], duration, error)
         end
-        qk_target_add_instruction(target, entry)
+        Qiskit.add_instruction!(target, entry)
     end
 
     # Add 2q basis gate (ECR)
@@ -50,18 +50,18 @@ function build_chain_target(num_qubits)
     for i in 1:num_qubits-1
         inst_error = 0.0090393 * (num_qubits - i + 1)
         inst_duration = 0.020039
-        qk_target_entry_add_property(ecr_entry, [i, i + 1], inst_duration, inst_error)
+        Qiskit.add_property!(ecr_entry, [i, i + 1], inst_duration, inst_error)
     end
-    qk_target_add_instruction(target, ecr_entry)
+    Qiskit.add_instruction!(target, ecr_entry)
 
     # Add measurement instruction
     meas_entry = Qiskit.target_entry_measure()
     for i in 1:num_qubits
         error = 0.0
         duration = 0.0
-        qk_target_entry_add_property(meas_entry, [i], duration, error)
+        Qiskit.add_property!(meas_entry, [i], duration, error)
     end
-    qk_target_add_instruction(target, meas_entry)
+    Qiskit.add_instruction!(target, meas_entry)
 
     return target
 end
@@ -87,6 +87,7 @@ idiomatic-Julia style, `Qiskit.Operations` provides the same operations as
 
 ```julia
 using Qiskit
+using Qiskit.C # lower-level C API functions
 using Qiskit.Operations # opt-in: brings h!, cx!, measure!, ... into scope
 
 function build_bell()
