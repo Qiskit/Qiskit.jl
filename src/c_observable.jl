@@ -21,7 +21,7 @@ function qk_obs_free(obs::Ptr{QkObs})
 end
 
 function qk_obs_zero(n::Integer)
-    n >= 0 || throw()
+    n >= 0 || throw(ArgumentError("n must be non-negative."))
     LibQiskit.qk_obs_zero(n)
 end
 
