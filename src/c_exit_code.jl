@@ -24,16 +24,12 @@ function _throw_exit_code(error_string::Ptr{Cchar}, summary::AbstractString)
     throw(ErrorException(summary))
 end
 
-"""
-    check_exit_code(code, error_string = Ptr{Cchar}(C_NULL))
-
-Throw an informative exception unless `code` is `QkExitCode_Success`.
-
-`error_string`, when non-NULL, is a C string that the failing function wrote a
-description of the problem into; it is appended to the message. The pointer is
-only read here, so the caller remains responsible for freeing it (with
-`qk_str_free`) after this function returns or throws.
-"""
+# Throw an informative exception unless `code` is `QkExitCode_Success`.
+#
+# `error_string`, when non-NULL, is a C string that the failing function wrote a
+# description of the problem into; it is appended to the message.  The pointer is
+# only read here, so the caller remains responsible for freeing it (with
+# `qk_str_free`) after this function returns or throws.
 function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
     if code == QkExitCode_Success
         return
