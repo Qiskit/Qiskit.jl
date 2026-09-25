@@ -12,54 +12,69 @@
 
 import .LibQiskit: QkExitCode
 
-function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
+# Append the C-provided description, when there is one, to our own summary of the
+# exit code.  The C string belongs to the caller; we only read it.
+function _throw_exit_code(error_string::Ptr{Cchar}, summary::AbstractString)
     if error_string != C_NULL
-        #println(unsafe_string(pointer(error_string)))
+        detail = unsafe_string(error_string)
+        if !isempty(detail)
+            throw(ErrorException("$(rstrip(summary, '.')): $detail"))
+        end
     end
+    throw(ErrorException(summary))
+end
+
+# Throw an informative exception unless `code` is `QkExitCode_Success`.
+#
+# `error_string`, when non-NULL, is a C string that the failing function wrote a
+# description of the problem into; it is appended to the message.  The pointer is
+# only read here, so the caller remains responsible for freeing it (with
+# `qk_str_free`) after this function returns or throws.
+function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
     if code == QkExitCode_Success
         return
     elseif code == QkExitCode_CInputError
-        throw(ErrorException("Error related to C data input."))
+        _throw_exit_code(error_string, "Error related to C data input.")
     elseif code == QkExitCode_NullPointerError
-        throw(ErrorException("Unexpected null pointer."))
+        _throw_exit_code(error_string, "Unexpected null pointer.")
     elseif code == QkExitCode_AlignmentError
-        throw(ErrorException("Pointer is not aligned to expected data."))
+        _throw_exit_code(error_string, "Pointer is not aligned to expected data.")
     elseif code == QkExitCode_IndexError
-        throw(ErrorException("Index out of bounds."))
+        _throw_exit_code(error_string, "Index out of bounds.")
     elseif code == QkExitCode_DuplicateIndexError
-        throw(ErrorException("Duplicate index."))
+        _throw_exit_code(error_string, "Duplicate index.")
     elseif code == QkExitCode_ArithmeticError
-        throw(ErrorException("Error related to arithmetic operations or similar."))
+        _throw_exit_code(error_string, "Error related to arithmetic operations or similar.")
     elseif code == QkExitCode_MismatchedQubits
-        throw(ErrorException("Mismatching number of qubits."))
+        _throw_exit_code(error_string, "Mismatching number of qubits.")
     elseif code == QkExitCode_ExpectedUnitary
-        throw(ErrorException("Matrix is not unitary."))
+        _throw_exit_code(error_string, "Matrix is not unitary.")
     elseif code == QkExitCode_TargetError
-        throw(ErrorException("Target related error"))
+        _throw_exit_code(error_string, "Target related error")
     elseif code == QkExitCode_TargetInstAlreadyExists
-        throw(ErrorException("Instruction already exists in the Target"))
+        _throw_exit_code(error_string, "Instruction already exists in the Target")
     elseif code == QkExitCode_TargetQargMismatch
-        throw(ErrorException("Properties with incorrect qargs was added"))
+        _throw_exit_code(error_string, "Properties with incorrect qargs was added")
     elseif code == QkExitCode_TargetInvalidQargsKey
-        throw(ErrorException("Trying to query into the target with non-existent qargs."))
+        _throw_exit_code(error_string, "Trying to query into the target with non-existent qargs.")
     elseif code == QkExitCode_TargetInvalidInstKey
-        throw(ErrorException("Querying an operation that doesn't exist in the Target."))
+        _throw_exit_code(error_string, "Querying an operation that doesn't exist in the Target.")
     elseif code == QkExitCode_TranspilerError
-        throw(ErrorException("Transpilation failed."))
+        _throw_exit_code(error_string, "Transpilation failed.")
     elseif code == QkExitCode_InvalidOperationKind
-        throw(ErrorException("Invalid operation kind."))
+        _throw_exit_code(error_string, "Invalid operation kind.")
     elseif code == QkExitCode_DagError
-        throw(ErrorException("DAG operation error."))
+        _throw_exit_code(error_string, "DAG operation error.")
     elseif code == QkExitCode_DagComposeMismatch
-        throw(ErrorException("DAGs have mismatching qubit/clbit amounts during compose."))
+        _throw_exit_code(error_string, "DAGs have mismatching qubit/clbit amounts during compose.")
     elseif code == QkExitCode_DagComposeMissingBit
-        throw(ErrorException("One or more bit indices were not found during compose."))
+        _throw_exit_code(error_string, "One or more bit indices were not found during compose.")
     elseif code == QkExitCode_ParameterError
-        throw(ErrorException("Error concerning parameter handling."))
+        _throw_exit_code(error_string, "Error concerning parameter handling.")
     elseif code == QkExitCode_ParameterNameConflict
-        throw(ErrorException("Parameter name conflict."))
+        _throw_exit_code(error_string, "Parameter name conflict.")
     else
-        throw(ErrorException("Unrecognized error code from Qiskit: $code"))
+        _throw_exit_code(error_string, "Unrecognized error code from Qiskit: $code")
     end
 end
 
