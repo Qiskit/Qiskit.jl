@@ -117,4 +117,23 @@
         show(io, result.layout)
         @test String(take!(io)) == "TranspileLayout(NULL)"
     end
+
+    @testset "Transpiler errors report the description from Qiskit" begin
+        # The target has fewer qubits than the circuit needs, so the transpiler
+        # fails and writes a description of why into its error-string argument.
+        qc = QuantumCircuit(5)
+        qc.h(1)
+        target = Qiskit.Target(2)
+        err = try
+            transpile(qc, target)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ErrorException
+        @test contains(err.msg, "Insufficient qubits in target")
+
+        # An exit code with no accompanying description still gets our own summary.
+        @test_throws "Index out of bounds." Qiskit.C.check_exit_code(QkExitCode_IndexError)
+    end
 end

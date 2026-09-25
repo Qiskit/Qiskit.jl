@@ -66,6 +66,11 @@ function qk_circuit_get_instruction(qc::Ref{QkCircuit}, index::Integer; offset::
     index0 = index - offset
     LibQiskit.qk_circuit_get_instruction(qc, index0, inst_ref)
     inst = inst_ref[]
+    # Everything below reads memory owned by `inst`, which `qk_circuit_instruction_clear`
+    # frees at the end of this function.  Each read must therefore materialize its own
+    # copy before then: `map` and the broadcasts below do so eagerly, and `unsafe_string`
+    # copies.  Replacing any of them with something lazy (a `view`, a generator, or a
+    # bare `unsafe_wrap` that escapes) would leave `retval` pointing at freed memory.
     param_ptrs = unsafe_wrap(Array, inst.params, inst.num_params)
     params = map(param_ptrs) do p
         LibQiskit.qk_param_as_real(p)
