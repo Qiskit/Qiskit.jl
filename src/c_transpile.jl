@@ -25,10 +25,16 @@ end
 
 QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 
-function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult}
+qk_transpiler_default_options() = LibQiskit.qk_transpiler_default_options()
+
+function qk_transpile(
+    qc::Ref{QkCircuit},
+    target::Ref{QkTarget},
+    options::Ptr{QkTranspileOptions},
+)::Ref{QkTranspileResult}
     result = Ref(QkTranspileResult())
     error_string = Ref{Ptr{Cchar}}(C_NULL)
-    exit_code = LibQiskit.qk_transpile(qc, target, C_NULL, result, error_string)
+    exit_code = LibQiskit.qk_transpile(qc, target, options, result, error_string)
     try
         check_exit_code(exit_code, error_string[])
     finally
@@ -37,4 +43,23 @@ function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspil
     return result
 end
 
-export qk_transpile, qk_transpile_layout_free
+qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult} =
+    qk_transpile(qc, target, Ptr{QkTranspileOptions}(C_NULL))
+
+function qk_transpile(
+    qc::Ref{QkCircuit},
+    target::Ref{QkTarget},
+    options::Ref{QkTranspileOptions},
+)::Ref{QkTranspileResult}
+    result = Ref(QkTranspileResult())
+    error_string = Ref{Ptr{Cchar}}(C_NULL)
+    exit_code = LibQiskit.qk_transpile(qc, target, options, result, error_string)
+    try
+        check_exit_code(exit_code, error_string[])
+    finally
+        LibQiskit.qk_str_free(error_string[])
+    end
+    return result
+end
+
+export qk_transpile, qk_transpile_layout_free, qk_transpiler_default_options
