@@ -180,8 +180,14 @@ function Base.show(io::IO, ::MIME"text/plain", obj::Target)
 end
 
 function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
-    qk_target_add_instruction(target.ptr, entry.ptr)
-    entry.ptr = C_NULL
+    try
+        qk_target_add_instruction(target.ptr, entry.ptr)
+    finally
+        # Qiskit takes ownership of a valid entry whether or not the instruction is
+        # successfully added, so clear the pointer always to prevent the
+        # finalizer from freeing it a second time.
+        entry.ptr = C_NULL
+    end
     nothing
 end
 
