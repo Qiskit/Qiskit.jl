@@ -63,11 +63,10 @@
         first_entry = Qiskit.target_entry_gate(QkGate_H)
         qk_target_entry_add_property(first_entry, [1], 0.0, 0.0)
         qk_target_add_instruction(target, first_entry)
+        @test first_entry.ptr == C_NULL
 
-        # Adding the same gate again fails, but Qiskit has taken ownership of the
-        # entry regardless, so our pointer must be cleared.  Leaving it set makes
-        # the finalizer free memory that Qiskit already freed, which aborts the
-        # process rather than raising anything catchable.
+        # Adding the same gate again fails, but still Qiskit will take ownership of the
+        # entry, so our pointer must be cleared.
         duplicate = Qiskit.target_entry_gate(QkGate_H)
         qk_target_entry_add_property(duplicate, [1], 0.0, 0.0)
         @test_throws "Instruction already exists in the Target" qk_target_add_instruction(
