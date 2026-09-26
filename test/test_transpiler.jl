@@ -14,39 +14,39 @@
     @testset "transpile_bv" begin
         # Julia translation of qiskit-sdk/test/c/test_transpiler.c
         num_qubits = 10
-        target = Qiskit.Target(num_qubits)
+        target = Target(num_qubits)
 
-        x_entry = Qiskit.target_entry_gate(QkGate_X)
+        x_entry = target_entry_gate(QkGate_X)
         for i in 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
-            qk_target_entry_add_property(x_entry, [i], duration, error)
+            add_property!(x_entry, [i], duration, error)
         end
-        qk_target_add_instruction(target, x_entry)
+        add_instruction!(target, x_entry)
 
-        sx_entry = Qiskit.target_entry_gate(QkGate_SX)
+        sx_entry = target_entry_gate(QkGate_SX)
         for i in 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
-            qk_target_entry_add_property(sx_entry, [i], duration, error)
+            add_property!(sx_entry, [i], duration, error)
         end
-        qk_target_add_instruction(target, sx_entry)
+        add_instruction!(target, sx_entry)
 
-        rz_entry = Qiskit.target_entry_gate(QkGate_RZ)
+        rz_entry = target_entry_gate(QkGate_RZ)
         for i in 1:num_qubits
             error = 0.0
             duration = 0.0
-            qk_target_entry_add_property(rz_entry, [i], duration, error)
+            add_property!(rz_entry, [i], duration, error)
         end
-        qk_target_add_instruction(target, rz_entry)
+        add_instruction!(target, rz_entry)
 
-        ecr_entry = Qiskit.target_entry_gate(QkGate_ECR)
+        ecr_entry = target_entry_gate(QkGate_ECR)
         for i in 1:num_qubits-1
             inst_error = 0.0090393 * (num_qubits - i + 1)
             inst_duration = 0.020039
-            qk_target_entry_add_property(ecr_entry, [i, i + 1], inst_duration, inst_error)
+            add_property!(ecr_entry, [i, i + 1], inst_duration, inst_error)
         end
-        qk_target_add_instruction(target, ecr_entry)
+        add_instruction!(target, ecr_entry)
 
         qc = QuantumCircuit(num_qubits)
         qc.x(10)
@@ -85,11 +85,11 @@
     end
 
     @testset "Base.show for TranspileResult and TranspileLayout" begin
-        target = Qiskit.Target(2)
-        h_entry = Qiskit.target_entry_gate(QkGate_H)
-        qk_target_entry_add_property(h_entry, [1], 0.0, 0.0)
-        qk_target_entry_add_property(h_entry, [2], 0.0, 0.0)
-        qk_target_add_instruction(target, h_entry)
+        target = Target(2)
+        h_entry = target_entry_gate(QkGate_H)
+        add_property!(h_entry, [1], 0.0, 0.0)
+        add_property!(h_entry, [2], 0.0, 0.0)
+        add_instruction!(target, h_entry)
 
         qc = QuantumCircuit(2)
         qc.h(1)
