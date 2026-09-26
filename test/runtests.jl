@@ -25,6 +25,7 @@ using Unitful
     include("test_target.jl")
     include("test_transpiler.jl")
     include("test_observable.jl")
+    include("test_dag.jl")
 
     # The wrapper types (`QuantumCircuit`, `Target`, `TargetEntry`,
     # `SparseObservable`, transpile layouts) register finalizers that call the
