@@ -33,6 +33,8 @@ mutable struct TranspileOptions
     TranspileOptions() = new(qk_transpiler_default_options())
 end
 
+# Deliberately omits the internal `options` field (unlike other wrappers, which
+# union in `fieldnames`): it is readable but not settable, so it isn't advertised.
 function Base.propertynames(::TranspileOptions; private::Bool = false)
     (:optimization_level, :seed, :approximation_degree)
 end
@@ -48,9 +50,11 @@ function Base.getproperty(obj::TranspileOptions, sym::Symbol)
 end
 
 function Base.setproperty!(obj::TranspileOptions, sym::Symbol, val)
-    sym === :options && return setfield!(obj, :options, val)
+    # There is intentionally no branch for `:options`: every mutation must go
+    # through validation, because out-of-range values make the C API panic,
+    # which aborts the process rather than raising a catchable exception.
     if sym === :optimization_level
-        val isa Integer && 0 <= val <= 3 ||
+        val isa Integer && !(val isa Bool) && 0 <= val <= 3 ||
             throw(ArgumentError("optimization_level must be an integer between 0 and 3."))
         setfield!(
             obj,
@@ -58,7 +62,8 @@ function Base.setproperty!(obj::TranspileOptions, sym::Symbol, val)
             QkTranspileOptions(UInt8(val), obj.seed, obj.approximation_degree),
         )
     elseif sym === :seed
-        val isa Integer || throw(ArgumentError("seed must be an integer."))
+        val isa Integer && !(val isa Bool) ||
+            throw(ArgumentError("seed must be an integer."))
         setfield!(
             obj,
             :options,
@@ -201,9 +206,6 @@ simultaneous multithreading. You can tune the number of threads with the
 `RAYON_NUM_THREADS` environment variable. For example, setting
 `RAYON_NUM_THREADS=4` would limit the thread pool to 4 threads.
 """
-transpile(qc::QuantumCircuit, target::Target, options::TranspileOptions)::TranspileResult =
-    qk_transpile(qc, target, options)
-
 transpile(
     qc::QuantumCircuit,
     target::Target;

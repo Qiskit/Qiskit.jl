@@ -84,52 +84,6 @@
         end
     end
 
-    @testset "TranspileOptions" begin
-        options = TranspileOptions()
-        @test options.optimization_level == 2
-        @test options.seed == -1
-        @test options.approximation_degree == 1.0
-
-        options.optimization_level = 3
-        options.seed = 42
-        options.approximation_degree = 0.5
-        @test options.optimization_level == 3
-        @test options.seed == 42
-        @test options.approximation_degree == 0.5
-
-        @test propertynames(options) == (:optimization_level, :seed, :approximation_degree)
-
-        @test_throws ArgumentError options.optimization_level = 5
-        @test_throws ArgumentError options.optimization_level = -1
-        @test_throws ArgumentError options.approximation_degree = 1.5
-        @test_throws ArgumentError options.optimization_level = "foo"
-        @test_throws ArgumentError options.unknown_property = 1
-
-        io = IOBuffer()
-        show(io, options)
-        @test startswith(String(take!(io)), "TranspileOptions(")
-
-        io = IOBuffer()
-        show(io, MIME"text/plain"(), options)
-        output = String(take!(io))
-        @test startswith(output, "TranspileOptions:")
-        @test contains(output, "optimization_level:")
-        @test contains(output, "seed:")
-        @test contains(output, "approximation_degree:")
-
-        # Options can be passed to transpile via keyword argument
-        target = Qiskit.Target(2)
-        h_entry = Qiskit.target_entry_gate(QkGate_H)
-        qk_target_entry_add_property(h_entry, [1], 0.0, 0.0)
-        qk_target_entry_add_property(h_entry, [2], 0.0, 0.0)
-        qk_target_add_instruction(target, h_entry)
-
-        qc = QuantumCircuit(2)
-        qc.h(1)
-        result = transpile(qc, target; options = options)
-        @test result.circuit isa QuantumCircuit
-    end
-
     @testset "Base.show for TranspileResult and TranspileLayout" begin
         target = Qiskit.Target(2)
         h_entry = Qiskit.target_entry_gate(QkGate_H)
@@ -162,5 +116,61 @@
         io = IOBuffer()
         show(io, result.layout)
         @test String(take!(io)) == "TranspileLayout(NULL)"
+    end
+
+    @testset "TranspileOptions" begin
+        options = TranspileOptions()
+        @test options.optimization_level == 2
+        @test options.seed == -1
+        @test options.approximation_degree == 1.0
+
+        options.optimization_level = 3
+        options.seed = 42
+        options.approximation_degree = 0.5
+        @test options.optimization_level == 3
+        @test options.seed == 42
+        @test options.approximation_degree == 0.5
+
+        @test issetequal(
+            propertynames(options),
+            (:optimization_level, :seed, :approximation_degree),
+        )
+
+        @test_throws ArgumentError options.optimization_level = 5
+        @test_throws ArgumentError options.optimization_level = -1
+        @test_throws ArgumentError options.approximation_degree = 1.5
+        @test_throws ArgumentError options.optimization_level = "foo"
+        @test_throws ArgumentError options.optimization_level = true
+        @test_throws ArgumentError options.seed = true
+        @test_throws ArgumentError options.unknown_property = 1
+        # The internal struct can be read but not replaced, so validation can't be bypassed
+        @test options.options isa Qiskit.C.QkTranspileOptions
+        @test_throws ArgumentError options.options =
+            Qiskit.C.QkTranspileOptions(UInt8(99), Int64(7), 5.0)
+        @test options.optimization_level == 3
+
+        io = IOBuffer()
+        show(io, options)
+        @test startswith(String(take!(io)), "TranspileOptions(")
+
+        io = IOBuffer()
+        show(io, MIME"text/plain"(), options)
+        output = String(take!(io))
+        @test startswith(output, "TranspileOptions:")
+        @test contains(output, "optimization_level:")
+        @test contains(output, "seed:")
+        @test contains(output, "approximation_degree:")
+
+        # Options can be passed to transpile via keyword argument
+        target = Qiskit.Target(2)
+        h_entry = Qiskit.target_entry_gate(QkGate_H)
+        qk_target_entry_add_property(h_entry, [1], 0.0, 0.0)
+        qk_target_entry_add_property(h_entry, [2], 0.0, 0.0)
+        qk_target_add_instruction(target, h_entry)
+
+        qc = QuantumCircuit(2)
+        qc.h(1)
+        result = transpile(qc, target; options = options)
+        @test result.circuit isa QuantumCircuit
     end
 end
