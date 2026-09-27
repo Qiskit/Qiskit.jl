@@ -10,12 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_transpile, qk_transpile_layout_free, qk_transpiler_default_options, QkTranspileLayout, QkTranspileOptions, QkTranspileResult
+import .C: qk_transpile, qk_transpile_layout_free, QkTranspileLayout, QkTranspileOptions, QkTranspileResult
 
 """
-    TranspileOptions
+    TranspileOptions(; optimization_level, seed, approximation_degree)
 
-Options for the Qiskit transpiler.
+Options for the Qiskit transpiler. Any property not passed as a keyword argument
+takes the transpiler's default value. For example, `TranspileOptions(seed=42)`.
 
 Available properties:
 
@@ -30,7 +31,19 @@ Available properties:
 """
 mutable struct TranspileOptions
     options::QkTranspileOptions
-    TranspileOptions() = new(qk_transpiler_default_options())
+    function TranspileOptions(;
+        optimization_level::Union{Integer,Nothing} = nothing,
+        seed::Union{Integer,Nothing} = nothing,
+        approximation_degree::Union{Real,Nothing} = nothing,
+    )
+        obj = new(LibQiskit.qk_transpiler_default_options())
+        # Go through `setproperty!` so that every value is validated
+        optimization_level === nothing || (obj.optimization_level = optimization_level)
+        seed === nothing || (obj.seed = seed)
+        approximation_degree === nothing ||
+            (obj.approximation_degree = approximation_degree)
+        obj
+    end
 end
 
 # Deliberately omits the internal `options` field (unlike other wrappers, which
@@ -174,29 +187,24 @@ end
 function qk_transpile(
     qc::QuantumCircuit,
     target::Target,
-    options::TranspileOptions,
+    options::Union{TranspileOptions,Nothing} = nothing,
 )::TranspileResult
-    result_ref = qk_transpile(qc.ptr, target.ptr, Ref(options.options))
-    circuit = QuantumCircuit(result_ref[].circuit)
-    layout = TranspileLayout(result_ref[].layout)
-    return TranspileResult(circuit, layout)
-end
-
-function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
-    result_ref = qk_transpile(qc.ptr, target.ptr)
+    result_ref =
+        options === nothing ? qk_transpile(qc.ptr, target.ptr) :
+        qk_transpile(qc.ptr, target.ptr, Ref(options.options))
     circuit = QuantumCircuit(result_ref[].circuit)
     layout = TranspileLayout(result_ref[].layout)
     return TranspileResult(circuit, layout)
 end
 
 """
-    transpile(circuit, target; options=nothing)
+    transpile(circuit, target, [options])
 
 Transpile a single circuit.
 
 The Qiskit transpiler is a quantum circuit compiler that rewrites a given input
 circuit to match the constraints of a QPU and optimizes the circuit for
-execution. Pass a [`TranspileOptions`](@ref) object as the `options` keyword
+execution. Pass a [`TranspileOptions`](@ref) object as the optional third
 argument to control the transpiler.
 
 This function wraps `qk_transpile`, which is multithreaded internally and will
@@ -208,9 +216,8 @@ simultaneous multithreading. You can tune the number of threads with the
 """
 transpile(
     qc::QuantumCircuit,
-    target::Target;
+    target::Target,
     options::Union{TranspileOptions,Nothing} = nothing,
-)::TranspileResult =
-    options === nothing ? qk_transpile(qc, target) : qk_transpile(qc, target, options)
+)::TranspileResult = qk_transpile(qc, target, options)
 
 export TranspileLayout, TranspileOptions, TranspileResult, transpile

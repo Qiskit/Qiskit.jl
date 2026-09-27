@@ -58,7 +58,7 @@
         end
         options = TranspileOptions()
         options.seed = 42
-        transpile_result = transpile(qc, target; options = options)
+        transpile_result = transpile(qc, target, options)
         io = IOBuffer()
         show(io, transpile_result)
         @test contains(String(take!(io)), "TranspileResult")
@@ -124,6 +124,18 @@
         @test options.seed == -1
         @test options.approximation_degree == 1.0
 
+        # Keyword constructor overrides only the given properties
+        seeded = TranspileOptions(seed = 42)
+        @test seeded.seed == 42
+        @test seeded.optimization_level == 2
+        @test seeded.approximation_degree == 1.0
+        seeded = TranspileOptions(optimization_level = 1, approximation_degree = NaN)
+        @test seeded.optimization_level == 1
+        @test seeded.seed == -1
+        @test isnan(seeded.approximation_degree)
+        @test_throws ArgumentError TranspileOptions(optimization_level = 5)
+        @test_throws ArgumentError TranspileOptions(seed = true)
+
         options.optimization_level = 3
         options.seed = 42
         options.approximation_degree = 0.5
@@ -161,7 +173,7 @@
         @test contains(output, "seed:")
         @test contains(output, "approximation_degree:")
 
-        # Options can be passed to transpile via keyword argument
+        # Options can be passed to transpile as a positional argument
         target = Qiskit.Target(2)
         h_entry = Qiskit.target_entry_gate(QkGate_H)
         qk_target_entry_add_property(h_entry, [1], 0.0, 0.0)
@@ -170,7 +182,7 @@
 
         qc = QuantumCircuit(2)
         qc.h(1)
-        result = transpile(qc, target; options = options)
+        result = transpile(qc, target, options)
         @test result.circuit isa QuantumCircuit
     end
 end

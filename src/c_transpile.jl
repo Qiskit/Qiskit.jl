@@ -25,8 +25,6 @@ end
 
 QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 
-qk_transpiler_default_options() = LibQiskit.qk_transpiler_default_options()
-
 function qk_transpile(
     qc::Ref{QkCircuit},
     target::Ref{QkTarget},
@@ -62,4 +60,4 @@ function qk_transpile(
     return result
 end
 
-export qk_transpile, qk_transpile_layout_free, qk_transpiler_default_options
+export qk_transpile, qk_transpile_layout_free
