@@ -163,7 +163,13 @@
 
         io = IOBuffer()
         show(io, options)
-        @test startswith(String(take!(io)), "TranspileOptions(")
+        output = String(take!(io))
+        @test startswith(output, "TranspileOptions(optimization_level = 3, seed = ")
+        # The compact form is valid constructor syntax, so it round-trips
+        roundtripped = eval(Meta.parse(output))
+        @test roundtripped.optimization_level == options.optimization_level
+        @test roundtripped.seed == options.seed
+        @test isequal(roundtripped.approximation_degree, options.approximation_degree)
 
         io = IOBuffer()
         show(io, MIME"text/plain"(), options)

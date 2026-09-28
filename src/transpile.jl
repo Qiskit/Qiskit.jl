@@ -104,11 +104,11 @@ function Base.setproperty!(obj::TranspileOptions, sym::Symbol, val)
 end
 
 function Base.show(io::IO, obj::TranspileOptions)
-    print(io, "TranspileOptions(")
+    print(io, "TranspileOptions(optimization_level = ")
     show(io, Int(obj.optimization_level))
-    print(io, ", ")
+    print(io, ", seed = ")
     show(io, obj.seed)
-    print(io, ", ")
+    print(io, ", approximation_degree = ")
     show(io, obj.approximation_degree)
     print(io, ")")
 end
