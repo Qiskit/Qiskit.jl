@@ -17,7 +17,7 @@
         target = Qiskit.Target(num_qubits)
 
         x_entry = Qiskit.target_entry_gate(QkGate_X)
-        for i in 1:num_qubits
+        for i = 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
             qk_target_entry_add_property(x_entry, [i], duration, error)
@@ -25,7 +25,7 @@
         qk_target_add_instruction(target, x_entry)
 
         sx_entry = Qiskit.target_entry_gate(QkGate_SX)
-        for i in 1:num_qubits
+        for i = 1:num_qubits
             error = 0.8e-6 * i
             duration = 1.8e-9 * i
             qk_target_entry_add_property(sx_entry, [i], duration, error)
@@ -33,7 +33,7 @@
         qk_target_add_instruction(target, sx_entry)
 
         rz_entry = Qiskit.target_entry_gate(QkGate_RZ)
-        for i in 1:num_qubits
+        for i = 1:num_qubits
             error = 0.0
             duration = 0.0
             qk_target_entry_add_property(rz_entry, [i], duration, error)
@@ -41,7 +41,7 @@
         qk_target_add_instruction(target, rz_entry)
 
         ecr_entry = Qiskit.target_entry_gate(QkGate_ECR)
-        for i in 1:num_qubits-1
+        for i = 1:(num_qubits-1)
             inst_error = 0.0090393 * (num_qubits - i + 1)
             inst_duration = 0.020039
             qk_target_entry_add_property(ecr_entry, [i, i + 1], inst_duration, inst_error)
@@ -50,10 +50,10 @@
 
         qc = QuantumCircuit(num_qubits)
         qc.x(10)
-        for i in 1:num_qubits
+        for i = 1:num_qubits
             qc.h(i)
         end
-        for i in 1:2:num_qubits-1
+        for i = 1:2:(num_qubits-1)
             qc.cx(i, num_qubits)
         end
         #QkTranspileOptions options = qk_transpiler_default_options()
@@ -73,7 +73,7 @@
         op_count_set = Set([name for (name, _) in op_counts])
         @test op_count_set == Set(["sx", "ecr", "x", "rz"])
         num_instructions = qk_circuit_num_instructions(transpile_result.circuit)
-        for i in 1:num_instructions
+        for i = 1:num_instructions
             inst = qk_circuit_get_instruction(transpile_result.circuit, i)
             if inst.name == "ecr"
                 @test inst.num_qubits == 2

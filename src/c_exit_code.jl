@@ -12,7 +12,10 @@
 
 import .LibQiskit: QkExitCode
 
-function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
+function check_exit_code(
+    code::QkExitCode,
+    error_string::Ptr{Cchar}=Ptr{Cchar}(C_NULL),
+)::Nothing
     if error_string != C_NULL
         #println(unsafe_string(pointer(error_string)))
     end

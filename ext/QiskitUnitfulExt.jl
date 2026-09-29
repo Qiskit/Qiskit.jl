@@ -2,7 +2,13 @@ module QiskitUnitfulExt
 
 import Unitful
 import Qiskit: QuantumCircuit, DelayInstructionClosure, delay!
-import Qiskit.C: qk_circuit_delay, QkDelayUnit_S, QkDelayUnit_MS, QkDelayUnit_US, QkDelayUnit_NS, QkDelayUnit_PS
+import Qiskit.C:
+    qk_circuit_delay,
+    QkDelayUnit_S,
+    QkDelayUnit_MS,
+    QkDelayUnit_US,
+    QkDelayUnit_NS,
+    QkDelayUnit_PS
 
 """
     delay!(qc::QuantumCircuit, qubit::Integer, duration::Unitful.Time)::QuantumCircuit

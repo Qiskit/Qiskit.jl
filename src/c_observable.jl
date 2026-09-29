@@ -37,7 +37,14 @@ function qk_obs_len(obs::Ptr{QkObs})::Int
     signed(LibQiskit.qk_obs_len(obs))
 end
 
-export QkBitTerm, qk_bitterm_label, QkObs, qk_obs_free, qk_obs_zero, qk_obs_num_terms, qk_obs_num_qubits, qk_obs_len
+export QkBitTerm,
+    qk_bitterm_label,
+    QkObs,
+    qk_obs_free,
+    qk_obs_zero,
+    qk_obs_num_terms,
+    qk_obs_num_qubits,
+    qk_obs_len
 
 # Export enum instances
 for e in (QkBitTerm,)

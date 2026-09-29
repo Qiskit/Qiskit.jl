@@ -56,7 +56,7 @@ const TranspileResult = @NamedTuple begin
 end
 
 TranspileResult(circuit::QuantumCircuit, layout::TranspileLayout) =
-    # Call the NamedTuple constructor
+# Call the NamedTuple constructor
     TranspileResult((circuit, layout))
 
 function Base.show(io::IO, result::TranspileResult)
@@ -97,7 +97,6 @@ simultaneous multithreading. You can tune the number of threads with the
 `RAYON_NUM_THREADS` environment variable. For example, setting
 `RAYON_NUM_THREADS=4` would limit the thread pool to 4 threads.
 """
-transpile(qc::QuantumCircuit, target::Target)::TranspileResult =
-    qk_transpile(qc, target)
+transpile(qc::QuantumCircuit, target::Target)::TranspileResult = qk_transpile(qc, target)
 
 export TranspileLayout, TranspileResult, transpile
