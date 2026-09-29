@@ -215,7 +215,7 @@ function qk_circuit_count_ops(qc::Ref{QkCircuit})
     retval = Tuple{String,Int}[]
     try
         sizehint!(retval, opcounts[].len)
-        for i = 1:opcounts[].len
+        for i in 1:opcounts[].len
             op_count = unsafe_load(opcounts[].data, i)
             push!(retval, (unsafe_string(op_count.name), op_count.count))
         end
