@@ -59,6 +59,21 @@ jobs:
         if: matrix.version == '1.10' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
         with:
           files: lcov.info
+  format:
+    name: Format check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
+      contents: read
+      pull-requests: write # needed to allow reviewdog to post formatting suggestions
+    steps:
+      # This action runs its own checkout, setup-julia, and cache steps.
+      - uses: julia-actions/julia-format@v4
+        with:
+          # Pin the major version.  The action defaults to JuliaFormatter 1.x,
+          # whose output differs from 2.x, including mangling `@doc` strings.
+          version: '2'
   docs:
     name: Documentation
     runs-on: ubuntu-latest

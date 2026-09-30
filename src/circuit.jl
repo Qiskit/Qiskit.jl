@@ -10,8 +10,30 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction, QkDelayUnit, QkDelayUnit_S, QkDelayUnit_MS, QkDelayUnit_US, QkDelayUnit_NS, QkDelayUnit_PS
-import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
+import .C:
+    qk_circuit_free,
+    qk_circuit_num_qubits,
+    qk_circuit_num_clbits,
+    qk_circuit_num_instructions,
+    qk_circuit_get_instruction,
+    qk_circuit_count_ops,
+    QkCircuit,
+    QkGate,
+    CircuitInstruction,
+    QkDelayUnit,
+    QkDelayUnit_S,
+    QkDelayUnit_MS,
+    QkDelayUnit_US,
+    QkDelayUnit_NS,
+    QkDelayUnit_PS
+import .C:
+    qk_circuit_gate,
+    qk_circuit_measure,
+    qk_circuit_reset,
+    qk_circuit_barrier,
+    qk_circuit_unitary,
+    qk_circuit_delay,
+    check_not_null
 using .C
 
 """
@@ -43,7 +65,7 @@ return the circuit, see [`Qiskit.Operations`](@ref).
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
     offset::Int
-    function QuantumCircuit(num_qubits::Integer = 0, num_clbits::Integer = 0; offset::Int = 1)
+    function QuantumCircuit(num_qubits::Integer=0, num_clbits::Integer=0; offset::Int=1)
         num_qubits >= 0 || throw(ArgumentError("Number of qubits must be non-negative."))
         num_clbits >= 0 || throw(ArgumentError("Number of clbits must be non-negative."))
         qc = new(LibQiskit.qk_circuit_new(num_qubits, num_clbits), offset)
@@ -51,7 +73,7 @@ mutable struct QuantumCircuit
         finalizer(qk_circuit_free, qc)
         qc
     end
-    function QuantumCircuit(ptr::Ptr{QkCircuit}; offset::Int = 1)
+    function QuantumCircuit(ptr::Ptr{QkCircuit}; offset::Int=1)
         check_not_null(ptr)
         qc = new(ptr, offset)
         # Take ownership; it's our job to free it eventually
@@ -106,7 +128,7 @@ function _apply_gate(qc::QuantumCircuit, gate, num_qubits::Int, num_params::Int,
         throw(ArgumentError("Unexpected number of arguments for gate"))
     end
     params = collect(Float64, args[1:num_params])
-    qubits = collect(Int32, args[num_params+1:end])
+    qubits = collect(Int32, args[(num_params+1):end])
     qk_circuit_gate(qc, gate, qubits, params)
     return nothing
 end
@@ -119,48 +141,48 @@ end
 # validated against the C library by a test that builds one instruction per
 # gate and checks the resulting `QkCircuitInstruction` (see test/test_circuit.jl).
 const GATE_TABLE = (
-    (:h,     QkGate_H,      1, 0),
-    (:id,    QkGate_I,      1, 0),
-    (:x,     QkGate_X,      1, 0),
-    (:y,     QkGate_Y,      1, 0),
-    (:z,     QkGate_Z,      1, 0),
-    (:p,     QkGate_Phase,  1, 1),
-    (:r,     QkGate_R,      1, 2),
-    (:rx,    QkGate_RX,     1, 1),
-    (:ry,    QkGate_RY,     1, 1),
-    (:rz,    QkGate_RZ,     1, 1),
-    (:s,     QkGate_S,      1, 0),
-    (:sdg,   QkGate_Sdg,    1, 0),
-    (:sx,    QkGate_SX,     1, 0),
-    (:sxdg,  QkGate_SXdg,   1, 0),
-    (:t,     QkGate_T,      1, 0),
-    (:tdg,   QkGate_Tdg,    1, 0),
-    (:u,     QkGate_U,      1, 3),
-    (:ch,    QkGate_CH,     2, 0),
-    (:cx,    QkGate_CX,     2, 0),
-    (:cy,    QkGate_CY,     2, 0),
-    (:cz,    QkGate_CZ,     2, 0),
-    (:dcx,   QkGate_DCX,    2, 0),
-    (:ecr,   QkGate_ECR,    2, 0),
-    (:swap,  QkGate_Swap,   2, 0),
-    (:iswap, QkGate_ISwap,  2, 0),
-    (:cp,    QkGate_CPhase, 2, 1),
-    (:crx,   QkGate_CRX,    2, 1),
-    (:cry,   QkGate_CRY,    2, 1),
-    (:crz,   QkGate_CRZ,    2, 1),
-    (:cs,    QkGate_CS,     2, 0),
-    (:csdg,  QkGate_CSdg,   2, 0),
-    (:csx,   QkGate_CSX,    2, 0),
-    (:cu,    QkGate_CU,     2, 4),
-    (:rxx,   QkGate_RXX,    2, 1),
-    (:ryy,   QkGate_RYY,    2, 1),
-    (:rzz,   QkGate_RZZ,    2, 1),
-    (:rzx,   QkGate_RZX,    2, 1),
-    (:ccx,   QkGate_CCX,    3, 0),
-    (:ccz,   QkGate_CCZ,    3, 0),
-    (:cswap, QkGate_CSwap,  3, 0),
-    (:rccx,  QkGate_RCCX,   3, 0),
-    (:rcccx, QkGate_RC3X,   4, 0),
+    (:h, QkGate_H, 1, 0),
+    (:id, QkGate_I, 1, 0),
+    (:x, QkGate_X, 1, 0),
+    (:y, QkGate_Y, 1, 0),
+    (:z, QkGate_Z, 1, 0),
+    (:p, QkGate_Phase, 1, 1),
+    (:r, QkGate_R, 1, 2),
+    (:rx, QkGate_RX, 1, 1),
+    (:ry, QkGate_RY, 1, 1),
+    (:rz, QkGate_RZ, 1, 1),
+    (:s, QkGate_S, 1, 0),
+    (:sdg, QkGate_Sdg, 1, 0),
+    (:sx, QkGate_SX, 1, 0),
+    (:sxdg, QkGate_SXdg, 1, 0),
+    (:t, QkGate_T, 1, 0),
+    (:tdg, QkGate_Tdg, 1, 0),
+    (:u, QkGate_U, 1, 3),
+    (:ch, QkGate_CH, 2, 0),
+    (:cx, QkGate_CX, 2, 0),
+    (:cy, QkGate_CY, 2, 0),
+    (:cz, QkGate_CZ, 2, 0),
+    (:dcx, QkGate_DCX, 2, 0),
+    (:ecr, QkGate_ECR, 2, 0),
+    (:swap, QkGate_Swap, 2, 0),
+    (:iswap, QkGate_ISwap, 2, 0),
+    (:cp, QkGate_CPhase, 2, 1),
+    (:crx, QkGate_CRX, 2, 1),
+    (:cry, QkGate_CRY, 2, 1),
+    (:crz, QkGate_CRZ, 2, 1),
+    (:cs, QkGate_CS, 2, 0),
+    (:csdg, QkGate_CSdg, 2, 0),
+    (:csx, QkGate_CSX, 2, 0),
+    (:cu, QkGate_CU, 2, 4),
+    (:rxx, QkGate_RXX, 2, 1),
+    (:ryy, QkGate_RYY, 2, 1),
+    (:rzz, QkGate_RZZ, 2, 1),
+    (:rzx, QkGate_RZX, 2, 1),
+    (:ccx, QkGate_CCX, 3, 0),
+    (:ccz, QkGate_CCZ, 3, 0),
+    (:cswap, QkGate_CSwap, 3, 0),
+    (:rccx, QkGate_RCCX, 3, 0),
+    (:rcccx, QkGate_RC3X, 4, 0),
 )
 
 # Compile-time dispatch from a gate symbol to its concrete `GateClosure`. When
@@ -229,7 +251,7 @@ returns `qc`. Same effect as `qc.barrier(qubits...)`.
 """
 function barrier!(qc::QuantumCircuit, qubits::Integer...)::QuantumCircuit
     if isempty(qubits)
-        qubits_vector = collect(Int32, qc.offset:qc.num_qubits+qc.offset-1)
+        qubits_vector = collect(Int32, qc.offset:(qc.num_qubits+qc.offset-1))
     else
         qubits_vector = collect(Int32, qubits)
     end
@@ -243,12 +265,22 @@ end
 Append a unitary `matrix` acting on `qubits`. Mutates and returns `qc`. Same
 effect as `qc.unitary(matrix, qubits)`.
 """
-function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::QuantumCircuit
+function unitary!(
+    qc::QuantumCircuit,
+    matrix::AbstractMatrix{<:Number},
+    qubits::AbstractVector{<:Integer};
+    check_input::Bool=true,
+)::QuantumCircuit
     qk_circuit_unitary(qc, matrix, qubits; check_input)
     return qc
 end
 
-function unitary!(qc::QuantumCircuit, matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::QuantumCircuit
+function unitary!(
+    qc::QuantumCircuit,
+    matrix::AbstractMatrix{<:Number},
+    qubits::Int...;
+    check_input::Bool=true,
+)::QuantumCircuit
     qk_circuit_unitary(qc, matrix, collect(qubits); check_input)
     return qc
 end
@@ -260,7 +292,12 @@ Append a `delay` of `duration` (in `unit`) on `qubit`. Mutates and returns `qc`.
 Same effect as `qc.delay(qubit, duration, unit)`. With Unitful loaded,
 `delay!(qc, qubit, duration::Unitful.Time)` is also available.
 """
-function delay!(qc::QuantumCircuit, qubit::Integer, duration::Real, unit::QkDelayUnit)::QuantumCircuit
+function delay!(
+    qc::QuantumCircuit,
+    qubit::Integer,
+    duration::Real,
+    unit::QkDelayUnit,
+)::QuantumCircuit
     qk_circuit_delay(qc, qubit, duration, unit)
     return qc
 end
@@ -299,12 +336,20 @@ struct UnitaryInstructionClosure
     qc::QuantumCircuit
 end
 
-function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}; check_input::Bool = true)::Nothing
+function (cl::UnitaryInstructionClosure)(
+    matrix::AbstractMatrix{<:Number},
+    qubits::AbstractVector{<:Integer};
+    check_input::Bool=true,
+)::Nothing
     unitary!(cl.qc, matrix, qubits; check_input)
     return nothing
 end
 
-function (cl::UnitaryInstructionClosure)(matrix::AbstractMatrix{<:Number}, qubits::Int...; check_input::Bool = true)::Nothing
+function (cl::UnitaryInstructionClosure)(
+    matrix::AbstractMatrix{<:Number},
+    qubits::Int...;
+    check_input::Bool=true,
+)::Nothing
     unitary!(cl.qc, matrix, qubits...; check_input)
     return nothing
 end
@@ -313,7 +358,11 @@ struct DelayInstructionClosure
     qc::QuantumCircuit
 end
 
-function (cl::DelayInstructionClosure)(qubit::Integer, duration::Real, unit::QkDelayUnit)::Nothing
+function (cl::DelayInstructionClosure)(
+    qubit::Integer,
+    duration::Real,
+    unit::QkDelayUnit,
+)::Nothing
     delay!(cl.qc, qubit, duration, unit)
     return nothing
 end
@@ -330,7 +379,7 @@ Return operation counts for the circuit.
 Each call to this function performs O(n) work to traverse the circuit.
 If you need to access counts for multiple operations, store the result in a variable.
 """
-function (cl::CountOpsClosure)()::Dict{String, Int}
+function (cl::CountOpsClosure)()::Dict{String,Int}
     Dict(qk_circuit_count_ops(cl.qc))
 end
 
@@ -341,7 +390,8 @@ end
 Base.IndexStyle(::Type{QuantumCircuitData}) = IndexLinear()
 Base.size(qcdata::QuantumCircuitData) = (qcdata.circuit.num_instructions,)
 Base.firstindex(qcdata::QuantumCircuitData) = qcdata.circuit.offset
-Base.lastindex(qcdata::QuantumCircuitData) = firstindex(qcdata) + qcdata.circuit.num_instructions - 1
+Base.lastindex(qcdata::QuantumCircuitData) =
+    firstindex(qcdata) + qcdata.circuit.num_instructions - 1
 
 function Base.getindex(qcdata::QuantumCircuitData, i::Integer)
     @boundscheck checkbounds(qcdata, i - qcdata.circuit.offset + 1)
@@ -368,11 +418,20 @@ end
 
 # Non-gate properties and pseudo-method accessors, kept as an explicit tuple so
 # `propertynames` can advertise them. Gate names are appended from `GATE_TABLE`.
-const _NONGATE_PROPERTIES =
-    (:data, :num_qubits, :num_clbits, :num_instructions, :count_ops,
-     :reset, :measure, :barrier, :delay, :unitary)
+const _NONGATE_PROPERTIES = (
+    :data,
+    :num_qubits,
+    :num_clbits,
+    :num_instructions,
+    :count_ops,
+    :reset,
+    :measure,
+    :barrier,
+    :delay,
+    :unitary,
+)
 
-function Base.propertynames(obj::QuantumCircuit; private::Bool = false)
+function Base.propertynames(obj::QuantumCircuit; private::Bool=false)
     union(fieldnames(typeof(obj)), _NONGATE_PROPERTIES, map(first, GATE_TABLE))
 end
 
@@ -380,7 +439,10 @@ function Base.show(io::IO, qc::QuantumCircuit)
     if qc.ptr == C_NULL
         print(io, "QuantumCircuit(NULL)")
     else
-        print(io, "QuantumCircuit($(qc.num_qubits), $(qc.num_clbits); $(qc.num_instructions) instructions)")
+        print(
+            io,
+            "QuantumCircuit($(qc.num_qubits), $(qc.num_clbits); $(qc.num_instructions) instructions)",
+        )
     end
 end
 
@@ -388,7 +450,10 @@ function Base.show(io::IO, ::MIME"text/plain", qc::QuantumCircuit)
     if qc.ptr == C_NULL
         print(io, "QuantumCircuit(NULL)")
     else
-        print(io, "QuantumCircuit with $(qc.num_qubits) qubits, $(qc.num_clbits) clbits\n  instructions: $(qc.num_instructions)")
+        print(
+            io,
+            "QuantumCircuit with $(qc.num_qubits) qubits, $(qc.num_clbits) clbits\n  instructions: $(qc.num_instructions)",
+        )
     end
 end
 
@@ -431,10 +496,11 @@ qk_circuit_reset(qc::QuantumCircuit, qubit::Integer)::Nothing =
 qk_circuit_barrier(qc::QuantumCircuit, qubits)::Nothing =
     qk_circuit_barrier(qc.ptr, qubits; offset=qc.offset)
 
-qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool = true)::Nothing =
+qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool=true)::Nothing =
     qk_circuit_unitary(qc.ptr, matrix, qubits; check_input, offset=qc.offset)
 
-qk_circuit_delay(qc::QuantumCircuit, args...) = qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
+qk_circuit_delay(qc::QuantumCircuit, args...) =
+    qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
 
 qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
 

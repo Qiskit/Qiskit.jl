@@ -56,4 +56,27 @@
         show(io, entry)
         @test String(take!(io)) == "TargetEntry(NULL)"
     end
+
+    @testset "A failed add_instruction still consumes the entry" begin
+        target = Qiskit.Target(2)
+
+        first_entry = Qiskit.target_entry_gate(QkGate_H)
+        qk_target_entry_add_property(first_entry, [1], 0.0, 0.0)
+        qk_target_add_instruction(target, first_entry)
+        @test first_entry.ptr == C_NULL
+
+        # Adding the same gate again fails, but still Qiskit will take ownership of the
+        # entry, so our pointer must be cleared.
+        duplicate = Qiskit.target_entry_gate(QkGate_H)
+        qk_target_entry_add_property(duplicate, [1], 0.0, 0.0)
+        @test_throws "Instruction already exists in the Target" qk_target_add_instruction(
+            target,
+            duplicate,
+        )
+        @test duplicate.ptr == C_NULL
+
+        # Freeing it again is then a no-op, as it is for any spent entry.
+        qk_target_entry_free(duplicate)
+        @test duplicate.ptr == C_NULL
+    end
 end

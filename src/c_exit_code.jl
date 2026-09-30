@@ -30,7 +30,10 @@ end
 # description of the problem into; it is appended to the message.  The pointer is
 # only read here, so the caller remains responsible for freeing it (with
 # `qk_str_free`) after this function returns or throws.
-function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}(C_NULL))::Nothing
+function check_exit_code(
+    code::QkExitCode,
+    error_string::Ptr{Cchar}=Ptr{Cchar}(C_NULL),
+)::Nothing
     if code == QkExitCode_Success
         return
     elseif code == QkExitCode_CInputError
@@ -56,9 +59,15 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
     elseif code == QkExitCode_TargetQargMismatch
         _throw_exit_code(error_string, "Properties with incorrect qargs was added")
     elseif code == QkExitCode_TargetInvalidQargsKey
-        _throw_exit_code(error_string, "Trying to query into the target with non-existent qargs.")
+        _throw_exit_code(
+            error_string,
+            "Trying to query into the target with non-existent qargs.",
+        )
     elseif code == QkExitCode_TargetInvalidInstKey
-        _throw_exit_code(error_string, "Querying an operation that doesn't exist in the Target.")
+        _throw_exit_code(
+            error_string,
+            "Querying an operation that doesn't exist in the Target.",
+        )
     elseif code == QkExitCode_TranspilerError
         _throw_exit_code(error_string, "Transpilation failed.")
     elseif code == QkExitCode_InvalidOperationKind
@@ -66,9 +75,15 @@ function check_exit_code(code::QkExitCode, error_string::Ptr{Cchar} = Ptr{Cchar}
     elseif code == QkExitCode_DagError
         _throw_exit_code(error_string, "DAG operation error.")
     elseif code == QkExitCode_DagComposeMismatch
-        _throw_exit_code(error_string, "DAGs have mismatching qubit/clbit amounts during compose.")
+        _throw_exit_code(
+            error_string,
+            "DAGs have mismatching qubit/clbit amounts during compose.",
+        )
     elseif code == QkExitCode_DagComposeMissingBit
-        _throw_exit_code(error_string, "One or more bit indices were not found during compose.")
+        _throw_exit_code(
+            error_string,
+            "One or more bit indices were not found during compose.",
+        )
     elseif code == QkExitCode_ParameterError
         _throw_exit_code(error_string, "Error concerning parameter handling.")
     elseif code == QkExitCode_ParameterNameConflict
