@@ -125,16 +125,16 @@
         @test options.approximation_degree == 1.0
 
         # Keyword constructor overrides only the given properties
-        seeded = TranspileOptions(seed = 42)
+        seeded = TranspileOptions(seed=42)
         @test seeded.seed == 42
         @test seeded.optimization_level == 2
         @test seeded.approximation_degree == 1.0
-        seeded = TranspileOptions(optimization_level = 1, approximation_degree = NaN)
+        seeded = TranspileOptions(optimization_level=1, approximation_degree=NaN)
         @test seeded.optimization_level == 1
         @test seeded.seed == -1
         @test isnan(seeded.approximation_degree)
-        @test_throws ArgumentError TranspileOptions(optimization_level = 5)
-        @test_throws ArgumentError TranspileOptions(seed = true)
+        @test_throws ArgumentError TranspileOptions(optimization_level=5)
+        @test_throws ArgumentError TranspileOptions(seed=true)
 
         options.optimization_level = 3
         options.seed = 42
