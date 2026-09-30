@@ -24,11 +24,13 @@ include("c_circuit.jl")
 include("c_target.jl")
 include("c_transpile.jl")
 include("c_observable.jl")
+include("c_param.jl")
 
 end # module C
 
 import .C: LibQiskit
 
+include("parameter.jl")
 include("circuit.jl")
 include("target.jl")
 include("transpile.jl")

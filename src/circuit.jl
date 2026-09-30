@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 import .C: qk_circuit_free, qk_circuit_num_qubits, qk_circuit_num_clbits, qk_circuit_num_instructions, qk_circuit_get_instruction, qk_circuit_count_ops, QkCircuit, QkGate, CircuitInstruction, QkDelayUnit, QkDelayUnit_S, QkDelayUnit_MS, QkDelayUnit_US, QkDelayUnit_NS, QkDelayUnit_PS
-import .C: qk_circuit_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
+import .C: qk_circuit_gate, qk_circuit_parameterized_gate, qk_circuit_measure, qk_circuit_reset, qk_circuit_barrier, qk_circuit_unitary, qk_circuit_delay, check_not_null
 using .C
 
 """
@@ -105,9 +105,17 @@ function _apply_gate(qc::QuantumCircuit, gate, num_qubits::Int, num_params::Int,
     if length(args) != num_qubits + num_params
         throw(ArgumentError("Unexpected number of arguments for gate"))
     end
-    params = collect(Float64, args[1:num_params])
+    param_args = args[1:num_params]
     qubits = collect(Int32, args[num_params+1:end])
-    qk_circuit_gate(qc, gate, qubits, params)
+    if all(p -> isa(p, Real), param_args)
+        params = collect(Float64, param_args)
+        qk_circuit_gate(qc, gate, qubits, params)
+    elseif all(p -> isa(p, Parameter), param_args)
+        param_ptrs = Ptr{QkParam}[p.ptr for p in param_args]
+        qk_circuit_parameterized_gate(qc, gate, qubits, param_ptrs)
+    else
+        throw(ArgumentError("Gate parameters must be all real numbers or all Parameter objects"))
+    end
     return nothing
 end
 
@@ -421,6 +429,9 @@ end
 
 qk_circuit_gate(qc::QuantumCircuit, args...)::Nothing =
     qk_circuit_gate(qc.ptr, args...; offset=qc.offset)
+
+qk_circuit_parameterized_gate(qc::QuantumCircuit, args...)::Nothing =
+    qk_circuit_parameterized_gate(qc.ptr, args...; offset=qc.offset)
 
 qk_circuit_measure(qc::QuantumCircuit, qubit::Integer, clbit::Integer)::Nothing =
     qk_circuit_measure(qc.ptr, qubit, clbit; offset=qc.offset)
