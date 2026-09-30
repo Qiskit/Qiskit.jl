@@ -10,7 +10,117 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_transpile, qk_transpile_layout_free, QkTranspileLayout, QkTranspileResult
+import .C: qk_transpile, qk_transpile_layout_free, QkTranspileLayout, QkTranspileOptions, QkTranspileResult
+
+"""
+    TranspileOptions(; optimization_level, seed, approximation_degree)
+
+Options for the Qiskit transpiler. Any property not passed as a keyword argument
+takes the transpiler's default value. For example, `TranspileOptions(seed=42)`.
+
+Available properties:
+
+- `optimization_level`: the optimization level, an integer between `0` and `3`
+- `seed`: the seed for the transpiler. If set to a negative number this means
+  no seed will be set and the RNGs used in the transpiler will be seeded from
+  system entropy.
+- `approximation_degree`: a heuristic dial where `1.0` means no approximation
+  (up to numerical tolerance) and `0.0` means the maximum approximation. A
+  `NaN` value indicates that approximation is allowed up to the reported error
+  rate for an operation in the target.
+"""
+mutable struct TranspileOptions
+    options::QkTranspileOptions
+    function TranspileOptions(;
+        optimization_level::Union{Integer,Nothing} = nothing,
+        seed::Union{Integer,Nothing} = nothing,
+        approximation_degree::Union{Real,Nothing} = nothing,
+    )
+        obj = new(LibQiskit.qk_transpiler_default_options())
+        # Go through `setproperty!` so that every value is validated
+        optimization_level === nothing || (obj.optimization_level = optimization_level)
+        seed === nothing || (obj.seed = seed)
+        approximation_degree === nothing ||
+            (obj.approximation_degree = approximation_degree)
+        obj
+    end
+end
+
+# Deliberately omits the internal `options` field (unlike other wrappers, which
+# union in `fieldnames`): it is readable but not settable, so it isn't advertised.
+function Base.propertynames(::TranspileOptions; private::Bool = false)
+    (:optimization_level, :seed, :approximation_degree)
+end
+
+function Base.getproperty(obj::TranspileOptions, sym::Symbol)
+    if sym === :options
+        getfield(obj, :options)
+    elseif sym in (:optimization_level, :seed, :approximation_degree)
+        getfield(getfield(obj, :options), sym)
+    else
+        getfield(obj, sym)
+    end
+end
+
+function Base.setproperty!(obj::TranspileOptions, sym::Symbol, val)
+    # There is intentionally no branch for `:options`: every mutation must go
+    # through validation, because out-of-range values make the C API panic,
+    # which aborts the process rather than raising a catchable exception.
+    if sym === :optimization_level
+        val isa Integer && !(val isa Bool) && 0 <= val <= 3 ||
+            throw(ArgumentError("optimization_level must be an integer between 0 and 3."))
+        setfield!(
+            obj,
+            :options,
+            QkTranspileOptions(UInt8(val), obj.seed, obj.approximation_degree),
+        )
+    elseif sym === :seed
+        val isa Integer && !(val isa Bool) ||
+            throw(ArgumentError("seed must be an integer."))
+        setfield!(
+            obj,
+            :options,
+            QkTranspileOptions(
+                obj.optimization_level,
+                Int64(val),
+                obj.approximation_degree,
+            ),
+        )
+    elseif sym === :approximation_degree
+        val isa Real && (isnan(val) || 0.0 <= val <= 1.0) || throw(
+            ArgumentError(
+                "approximation_degree must be a NaN or a value between 0.0 and 1.0.",
+            ),
+        )
+        setfield!(
+            obj,
+            :options,
+            QkTranspileOptions(obj.optimization_level, obj.seed, Float64(val)),
+        )
+    else
+        throw(ArgumentError("Unknown TranspileOptions property: $sym"))
+    end
+    nothing
+end
+
+function Base.show(io::IO, obj::TranspileOptions)
+    print(io, "TranspileOptions(optimization_level = ")
+    show(io, Int(obj.optimization_level))
+    print(io, ", seed = ")
+    show(io, obj.seed)
+    print(io, ", approximation_degree = ")
+    show(io, obj.approximation_degree)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", obj::TranspileOptions)
+    print(io, "TranspileOptions:\n  optimization_level: ")
+    show(io, Int(obj.optimization_level))
+    print(io, "\n  seed: ")
+    show(io, obj.seed)
+    print(io, "\n  approximation_degree: ")
+    show(io, obj.approximation_degree)
+end
 
 """
     TranspileLayout
@@ -74,21 +184,28 @@ function Base.show(io::IO, ::MIME"text/plain", result::TranspileResult)
     show(io, result.layout)
 end
 
-function qk_transpile(qc::QuantumCircuit, target::Target)::TranspileResult
-    result_ref = qk_transpile(qc.ptr, target.ptr)
+function qk_transpile(
+    qc::QuantumCircuit,
+    target::Target,
+    options::Union{TranspileOptions,Nothing} = nothing,
+)::TranspileResult
+    # `QkTranspileOptions` must be wrapped in a `Ref` to be passed to C
+    opts = options === nothing ? Ptr{QkTranspileOptions}(C_NULL) : Ref(options.options)
+    result_ref = qk_transpile(qc.ptr, target.ptr, opts)
     circuit = QuantumCircuit(result_ref[].circuit)
     layout = TranspileLayout(result_ref[].layout)
     return TranspileResult(circuit, layout)
 end
 
 """
-    transpile(circuit, target)
+    transpile(circuit, target, [options])
 
 Transpile a single circuit.
 
 The Qiskit transpiler is a quantum circuit compiler that rewrites a given input
 circuit to match the constraints of a QPU and optimizes the circuit for
-execution.
+execution. Pass a [`TranspileOptions`](@ref) object as the optional third
+argument to control the transpiler.
 
 This function wraps `qk_transpile`, which is multithreaded internally and will
 launch a thread pool with threads equal to the number of CPUs reported by the
@@ -97,6 +214,10 @@ simultaneous multithreading. You can tune the number of threads with the
 `RAYON_NUM_THREADS` environment variable. For example, setting
 `RAYON_NUM_THREADS=4` would limit the thread pool to 4 threads.
 """
-transpile(qc::QuantumCircuit, target::Target)::TranspileResult = qk_transpile(qc, target)
+transpile(
+    qc::QuantumCircuit,
+    target::Target,
+    options::Union{TranspileOptions,Nothing} = nothing,
+)::TranspileResult = qk_transpile(qc, target, options)
 
-export TranspileLayout, TranspileResult, transpile
+export TranspileLayout, TranspileOptions, TranspileResult, transpile
