@@ -10,7 +10,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_transpile, qk_transpile_layout_free, QkTranspileLayout, QkTranspileOptions, QkTranspileResult
+import .C:
+    qk_transpile,
+    qk_transpile_layout_free,
+    QkTranspileLayout,
+    QkTranspileOptions,
+    QkTranspileResult
 
 """
     TranspileOptions(; optimization_level, seed, approximation_degree)
@@ -32,9 +37,9 @@ Available properties:
 mutable struct TranspileOptions
     options::QkTranspileOptions
     function TranspileOptions(;
-        optimization_level::Union{Integer,Nothing} = nothing,
-        seed::Union{Integer,Nothing} = nothing,
-        approximation_degree::Union{Real,Nothing} = nothing,
+        optimization_level::Union{Integer,Nothing}=nothing,
+        seed::Union{Integer,Nothing}=nothing,
+        approximation_degree::Union{Real,Nothing}=nothing,
     )
         obj = new(LibQiskit.qk_transpiler_default_options())
         # Go through `setproperty!` so that every value is validated
@@ -48,7 +53,7 @@ end
 
 # Deliberately omits the internal `options` field (unlike other wrappers, which
 # union in `fieldnames`): it is readable but not settable, so it isn't advertised.
-function Base.propertynames(::TranspileOptions; private::Bool = false)
+function Base.propertynames(::TranspileOptions; private::Bool=false)
     (:optimization_level, :seed, :approximation_degree)
 end
 
@@ -166,7 +171,7 @@ const TranspileResult = @NamedTuple begin
 end
 
 TranspileResult(circuit::QuantumCircuit, layout::TranspileLayout) =
-    # Call the NamedTuple constructor
+# Call the NamedTuple constructor
     TranspileResult((circuit, layout))
 
 function Base.show(io::IO, result::TranspileResult)
@@ -187,7 +192,7 @@ end
 function qk_transpile(
     qc::QuantumCircuit,
     target::Target,
-    options::Union{TranspileOptions,Nothing} = nothing,
+    options::Union{TranspileOptions,Nothing}=nothing,
 )::TranspileResult
     # `QkTranspileOptions` must be wrapped in a `Ref` to be passed to C
     opts = options === nothing ? Ptr{QkTranspileOptions}(C_NULL) : Ref(options.options)
@@ -217,7 +222,7 @@ simultaneous multithreading. You can tune the number of threads with the
 transpile(
     qc::QuantumCircuit,
     target::Target,
-    options::Union{TranspileOptions,Nothing} = nothing,
+    options::Union{TranspileOptions,Nothing}=nothing,
 )::TranspileResult = qk_transpile(qc, target, options)
 
 export TranspileLayout, TranspileOptions, TranspileResult, transpile

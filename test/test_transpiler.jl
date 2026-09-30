@@ -41,7 +41,7 @@
         qk_target_add_instruction(target, rz_entry)
 
         ecr_entry = Qiskit.target_entry_gate(QkGate_ECR)
-        for i in 1:num_qubits-1
+        for i in 1:(num_qubits-1)
             inst_error = 0.0090393 * (num_qubits - i + 1)
             inst_duration = 0.020039
             qk_target_entry_add_property(ecr_entry, [i, i + 1], inst_duration, inst_error)
@@ -53,7 +53,7 @@
         for i in 1:num_qubits
             qc.h(i)
         end
-        for i in 1:2:num_qubits-1
+        for i in 1:2:(num_qubits-1)
             qc.cx(i, num_qubits)
         end
         options = TranspileOptions()
@@ -125,16 +125,16 @@
         @test options.approximation_degree == 1.0
 
         # Keyword constructor overrides only the given properties
-        seeded = TranspileOptions(seed = 42)
+        seeded = TranspileOptions(seed=42)
         @test seeded.seed == 42
         @test seeded.optimization_level == 2
         @test seeded.approximation_degree == 1.0
-        seeded = TranspileOptions(optimization_level = 1, approximation_degree = NaN)
+        seeded = TranspileOptions(optimization_level=1, approximation_degree=NaN)
         @test seeded.optimization_level == 1
         @test seeded.seed == -1
         @test isnan(seeded.approximation_degree)
-        @test_throws ArgumentError TranspileOptions(optimization_level = 5)
-        @test_throws ArgumentError TranspileOptions(seed = true)
+        @test_throws ArgumentError TranspileOptions(optimization_level=5)
+        @test_throws ArgumentError TranspileOptions(seed=true)
 
         options.optimization_level = 3
         options.seed = 42

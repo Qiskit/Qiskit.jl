@@ -43,8 +43,7 @@ using Qiskit.Operations
         Qiskit.reset!(qc, 1)
         Qiskit.measure!(qc, 1, 1)
         Qiskit.measure!(qc, 2, 2)
-        @test [i.name for i in qc.data] ==
-              ["h", "cx", "barrier", "reset", "measure", "measure"]
+        @test [i.name for i in qc.data] == ["h", "cx", "barrier", "reset", "measure", "measure"]
     end
 
     @testset "return values: `!` returns qc, property form returns nothing" begin

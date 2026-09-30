@@ -29,7 +29,7 @@ QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 function qk_transpile(
     qc::Ref{QkCircuit},
     target::Ref{QkTarget},
-    options::Ref{QkTranspileOptions} = Ptr{QkTranspileOptions}(C_NULL),
+    options::Ref{QkTranspileOptions}=Ptr{QkTranspileOptions}(C_NULL),
 )::Ref{QkTranspileResult}
     result = Ref(QkTranspileResult())
     error_string = Ref{Ptr{Cchar}}(C_NULL)
