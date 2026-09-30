@@ -189,9 +189,9 @@ function qk_transpile(
     target::Target,
     options::Union{TranspileOptions,Nothing} = nothing,
 )::TranspileResult
-    result_ref =
-        options === nothing ? qk_transpile(qc.ptr, target.ptr) :
-        qk_transpile(qc.ptr, target.ptr, Ref(options.options))
+    # `QkTranspileOptions` must be wrapped in a `Ref` to be passed to C
+    opts = options === nothing ? Ptr{QkTranspileOptions}(C_NULL) : Ref(options.options)
+    result_ref = qk_transpile(qc.ptr, target.ptr, opts)
     circuit = QuantumCircuit(result_ref[].circuit)
     layout = TranspileLayout(result_ref[].layout)
     return TranspileResult(circuit, layout)
