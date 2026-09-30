@@ -25,10 +25,15 @@ end
 
 QkTranspileResult() = QkTranspileResult(C_NULL, C_NULL)
 
-function qk_transpile(qc::Ref{QkCircuit}, target::Ref{QkTarget})::Ref{QkTranspileResult}
+# A NULL `options` pointer tells the transpiler to use its own default options.
+function qk_transpile(
+    qc::Ref{QkCircuit},
+    target::Ref{QkTarget},
+    options::Ref{QkTranspileOptions} = Ptr{QkTranspileOptions}(C_NULL),
+)::Ref{QkTranspileResult}
     result = Ref(QkTranspileResult())
     error_string = Ref{Ptr{Cchar}}(C_NULL)
-    exit_code = LibQiskit.qk_transpile(qc, target, C_NULL, result, error_string)
+    exit_code = LibQiskit.qk_transpile(qc, target, options, result, error_string)
     try
         check_exit_code(exit_code, error_string[])
     finally
