@@ -158,6 +158,16 @@ Type `] test Qiskit` in the Julia REPL, or run the following command:
 julia -e 'using Pkg; Pkg.test("Qiskit")'
 ```
 
+## Code formatting
+
+This repository is formatted using [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl), and CI checks that the code is formatted.  To format the code in place:
+
+```sh
+make format
+```
+
+The `format/` environment pins the JuliaFormatter version so that local runs and CI agree.
+
 ## License
 
 Apache License 2.0

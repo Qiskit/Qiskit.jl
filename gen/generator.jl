@@ -11,7 +11,11 @@ qiskit_dir = joinpath(include_dir, "qiskit")
 
 # Clang.jl cannot handle `extern "C"` blocks (CLLinkageSpec cursors), so we
 # descend into linkage-spec children to find declarations inside them.
-function collect_top_level_nodes!(nodes::Vector{Generators.ExprNode}, cursor::CLLinkageSpec, options::Dict)
+function collect_top_level_nodes!(
+    nodes::Vector{Generators.ExprNode},
+    cursor::CLLinkageSpec,
+    options::Dict,
+)
     for child in children(cursor)
         collect_top_level_nodes!(nodes, child, options)
     end
@@ -29,7 +33,8 @@ push!(args, "-I$include_dir")
 # We also need a stub <complex> header since qiskit/complex.h includes it in C++ mode.
 stub_dir = joinpath(@__DIR__, "stub_cxx")
 mkpath(stub_dir)
-write(joinpath(stub_dir, "complex"),
+write(
+    joinpath(stub_dir, "complex"),
     """
     #pragma clang system_header
     #ifndef _GLIBCXX_COMPLEX
@@ -46,7 +51,8 @@ write(joinpath(stub_dir, "complex"),
       };
     }
     #endif
-    """)
+    """,
+)
 push!(args, "-x", "c++")
 push!(args, "-std=c++11")
 push!(args, "-nostdinc++")

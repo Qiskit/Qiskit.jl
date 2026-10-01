@@ -26,7 +26,17 @@
     qc.reset(4)
     @test qc.num_instructions == 9
     instructions = [instruction.name for instruction in qc.data]
-    @test instructions == ["rz", "h", "xx_plus_yy", "delay", "delay", "unitary", "barrier", "measure", "reset"]
+    @test instructions == [
+        "rz",
+        "h",
+        "xx_plus_yy",
+        "delay",
+        "delay",
+        "unitary",
+        "barrier",
+        "measure",
+        "reset",
+    ]
     expected_op_counts = Dict(
         "rz" => 1,
         "h" => 1,
@@ -63,7 +73,8 @@
         @test_throws ArgumentError qk_circuit_measure(qc, 3, 1)
         @test_throws ArgumentError qk_circuit_reset(qc, 4)
         instructions = [instruction.name for instruction in qc.data]
-        @test instructions == ["rz", "cx", "delay", "unitary", "barrier", "measure", "reset"]
+        @test instructions ==
+              ["rz", "cx", "delay", "unitary", "barrier", "measure", "reset"]
         @test qk_circuit_get_instruction(qc, 0).params == [0.25]
         @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
         @test qk_circuit_get_instruction(qc, 2).params == [4.0]
@@ -99,17 +110,17 @@
         show(io, qc_zero)
         @test String(take!(io)) == "QuantumCircuit(NULL)"
     end
-    
+
     @testset "Unitful support" begin
         qc = QuantumCircuit(4, 0)
-        
+
         # Test supported units
         qc.delay(1, 1.5 * Unitful.s)
         qc.delay(2, 500 * Unitful.ms)
         qc.delay(3, 10 * Unitful.μs)
         qc.delay(4, 5 * Unitful.ns)
         qc.delay(1, 100 * Unitful.ps)
-        
+
         @test qc.num_instructions == 5
         @test qc.data[1].name == "delay"
         @test qc.data[1].params == [1.5]
@@ -144,11 +155,11 @@
 
         # check_input keyword forwarded
         non_unitary = [1.0 1.0; 0.0 1.0]
-        qc.unitary(non_unitary, [3]; check_input = false)
+        qc.unitary(non_unitary, [3]; check_input=false)
         @test qc.num_instructions == 4
 
         # check_input=true enforces unitarity; expects clean error, not panic
-        @test_throws ErrorException qc.unitary(non_unitary, [3]; check_input = true)
+        @test_throws ErrorException qc.unitary(non_unitary, [3]; check_input=true)
         @test qc.num_instructions == 4
 
         # wrong matrix size throws
