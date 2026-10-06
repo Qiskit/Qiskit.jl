@@ -37,5 +37,12 @@ admits = under_test in Pkg.Versions.semver_spec(compat)
 println("admits=", admits)
 println("compat=", compat)
 println("under_test=", under_test)
-println("reason=compat \"", compat, "\" ", admits ? "admits" : "excludes",
-        " ", under_test, ", the version under test")
+println(
+    "reason=compat \"",
+    compat,
+    "\" ",
+    admits ? "admits" : "excludes",
+    " ",
+    under_test,
+    ", the version under test",
+)
