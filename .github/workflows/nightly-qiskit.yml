@@ -1,0 +1,304 @@
+name: Nightly Qiskit prerelease
+on:
+  schedule:
+    # 07:17 UTC daily.  Off-the-hour to avoid the top-of-hour scheduling crush
+    # on GitHub's runners.
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+  test-against-latest-qiskit:
+    name: Build Qiskit_jll and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      # Needed early: the compat check below runs before the build steps.
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+
+      - name: Identify the highest-numbered Qiskit release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Include pre-releases; exclude drafts.  `sort -V` is not usable here:
+          # it orders 2.5.0rc1 above 2.5.0, so a stale pre-release would win
+          # over its own final release.  PEP 440 ordering gets this right.
+          gh api repos/Qiskit/qiskit/releases --paginate \
+            --jq '.[] | select(.draft == false) | .tag_name' > tags.txt
+
+          tag="$(python3 - <<'PY'
+          from packaging.version import InvalidVersion, Version
+
+          best = None
+          for line in open("tags.txt"):
+              tag = line.strip()
+              if not tag:
+                  continue
+              try:
+                  version = Version(tag)
+              except InvalidVersion:
+                  continue
+              if best is None or version > best[0]:
+                  best = (version, tag)
+
+          if best is None:
+              raise SystemExit("no parseable release tags found")
+          print(best[1])
+          PY
+          )"
+
+          # Drop any rc/pre-release suffix: Yggdrasil builds are versioned by
+          # the underlying release, and BinaryBuilder wants a plain v"x.y.z".
+          version="$(python3 -c 'import sys; from packaging.version import Version; print(Version(sys.argv[1]).base_version)' "$tag")"
+
+          # Qiskit's release tags are annotated, so the tag ref points at a tag
+          # object rather than a commit.  Dereference it with ^{} to get the
+          # commit hash that GitSource needs.
+          hash="$(git ls-remote https://github.com/Qiskit/qiskit.git "refs/tags/${tag}^{}" | cut -f1)"
+          if [ -z "$hash" ]; then
+            # Lightweight tag: the ref itself is the commit.
+            hash="$(git ls-remote https://github.com/Qiskit/qiskit.git "refs/tags/${tag}" | cut -f1)"
+          fi
+          if [ -z "$hash" ]; then
+            echo "could not resolve tag ${tag} to a commit" >&2
+            exit 1
+          fi
+
+          {
+            echo "tag=${tag}"
+            echo "version=${version}"
+            echo "hash=${hash}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Latest Qiskit release"
+            echo
+            echo "| field | value |"
+            echo "| --- | --- |"
+            echo "| tag | \`${tag}\` |"
+            echo "| version | \`${version}\` |"
+            echo "| commit | \`${hash}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Construct the (qiskit_hash, qiskit_jl_main) tuple
+        id: tuple
+        run: |
+          set -euo pipefail
+          qiskit_jl_main="$(git rev-parse HEAD)"
+          key="${{ steps.release.outputs.hash }}-${qiskit_jl_main}"
+          echo "qiskit_jl_main=${qiskit_jl_main}" >> "$GITHUB_OUTPUT"
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+          echo "Tuple: (${{ steps.release.outputs.hash }}, ${qiskit_jl_main})"
+
+      # The cache is the only state that persists between scheduled runs.  A hit
+      # on this exact key means we already ran this tuple to completion.
+      - name: Check whether this tuple already ran
+        id: state
+        uses: actions/cache/restore@v4
+        with:
+          path: .nightly-state
+          key: nightly-qiskit-${{ steps.tuple.outputs.key }}
+
+      # A matching tuple is not sufficient grounds to skip: the [compat] bound
+      # on Qiskit_jll may exclude the very release we are testing against, in
+      # which case the package could not use it even once the JLL is published,
+      # and we want to hear about that rather than skip.
+      - name: Check whether [compat] admits the release under test
+        id: compat
+        run: |
+          set -euo pipefail
+          julia .github/scripts/check_jll_compat.jl Project.toml \
+            '${{ steps.release.outputs.version }}' | tee compat.txt
+          grep '^admits=' compat.txt >> "$GITHUB_OUTPUT"
+          {
+            echo "### Qiskit_jll compat"
+            echo
+            sed 's/^/- /' compat.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip if nothing changed
+        id: decide
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.state.outputs.cache-hit }}" = "true" ] \
+             && [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
+            echo "This tuple has already been tested and [compat] admits the"
+            echo "release under test; nothing to do."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            # shellcheck disable=SC2016  # backticks are Markdown, not command substitution
+            echo 'Skipped: tuple already tested and `[compat]` admits the release under test.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Shallow clone Yggdrasil
+        if: steps.decide.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/JuliaPackaging/Yggdrasil.git "$RUNNER_TEMP/Yggdrasil"
+
+      - name: Compare the hash already in Yggdrasil
+        id: ygg
+        if: steps.decide.outputs.proceed == 'true'
+        env:
+          QISKIT_HASH: ${{ steps.release.outputs.hash }}
+        run: |
+          set -euo pipefail
+          recipe="$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
+          if ! grep -q "$QISKIT_HASH" "$recipe"; then
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
+            echo "Yggdrasil already pins ${QISKIT_HASH}; nothing to test."
+            echo "Yggdrasil already pins \`${QISKIT_HASH}\`; exited successfully." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Nothing to build, but the bound would still keep the package from
+          # using this release, so this is a failure rather than a clean no-op.
+          echo "Yggdrasil already pins ${QISKIT_HASH}, but the Qiskit_jll [compat]" >&2
+          echo "bound in Project.toml excludes the release under test." >&2
+          echo "The compat bound needs widening." >&2
+          # shellcheck disable=SC2016  # backticks are Markdown, not command substitution
+          echo 'Failed: `[compat]` excludes the release under test; the bound needs widening.' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Update the version and hash in build_tarballs.jl
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        env:
+          NEW_VERSION: ${{ steps.release.outputs.version }}
+          NEW_HASH: ${{ steps.release.outputs.hash }}
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl" <<'PY'
+          import os
+          import re
+          import sys
+
+          path = sys.argv[1]
+          with open(path) as f:
+              source = f.read()
+
+          version = os.environ["NEW_VERSION"]
+          new_hash = os.environ["NEW_HASH"]
+
+          source, n_version = re.subn(
+              r'(?m)^(version\s*=\s*v")[^"]+(")',
+              lambda m: m.group(1) + version + m.group(2),
+              source,
+          )
+          source, n_hash = re.subn(
+              r'(GitSource\("https://github\.com/Qiskit/qiskit\.git",\s*")[0-9a-fA-F]+(")',
+              lambda m: m.group(1) + new_hash + m.group(2),
+              source,
+          )
+
+          # Fail loudly rather than silently building a stale recipe if the
+          # upstream file is ever restructured.
+          if n_version != 1:
+              raise SystemExit(f"expected 1 version assignment, replaced {n_version}")
+          if n_hash != 1:
+              raise SystemExit(f"expected 1 qiskit GitSource hash, replaced {n_hash}")
+
+          with open(path, "w") as f:
+              f.write(source)
+          PY
+
+      - name: Show the resulting build_tarballs.jl
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: cat "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
+
+      - name: Install juliaup
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: |
+          set -euo pipefail
+          if command -v juliaup >/dev/null 2>&1; then
+            echo "juliaup already available: $(command -v juliaup)"
+            exit 0
+          fi
+          cargo install juliaup
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      # BinaryBuilder.jl does not support Julia newer than 1.7.
+      - name: juliaup add 1.7
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: juliaup add 1.7
+
+      - name: Build Qiskit_jll locally
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        working-directory: ${{ runner.temp }}/Yggdrasil/Q/Qiskit
+        run: julia +1.7 build_tarballs.jl --deploy=local
+
+      - name: Develop the locally built Qiskit_jll
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: julia -e 'using Pkg; pkg"dev ~/.julia/dev/Qiskit_jll"'
+
+      - name: Remove the Qiskit_jll compat constraint
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: |
+          set -euo pipefail
+          python3 - Project.toml <<'PY'
+          import re
+          import sys
+
+          path = sys.argv[1]
+          with open(path) as f:
+              lines = f.readlines()
+
+          # Section-aware: `Qiskit_jll` appears under both [deps] and [compat],
+          # and removing the [deps] entry would break the package outright.
+          out = []
+          section = None
+          removed = 0
+          for line in lines:
+              header = re.match(r"\s*\[([^\]]+)\]", line)
+              if header:
+                  section = header.group(1)
+              elif section == "compat" and re.match(r"\s*Qiskit_jll\s*=", line):
+                  removed += 1
+                  continue
+              out.append(line)
+
+          with open(path, "w") as f:
+              f.writelines(out)
+          print(f"removed {removed} compat entry/entries for Qiskit_jll")
+          PY
+
+      - name: Show the modified Project.toml
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: cat Project.toml
+
+      - name: Develop this checkout
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: julia -e 'using Pkg; pkg"dev ."'
+
+      - name: Test Qiskit.jl
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: julia -e 'using Pkg; Pkg.test("Qiskit")'
+
+      # Record the tuple only on success, so a failing run is retried tomorrow
+      # rather than suppressed by the cache.
+      - name: Record this tuple
+        if: success() && steps.decide.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .nightly-state
+          echo "${{ steps.tuple.outputs.key }}" > .nightly-state/key
+
+      - name: Save the tuple to the cache
+        if: success() && steps.decide.outputs.proceed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .nightly-state
+          key: nightly-qiskit-${{ steps.tuple.outputs.key }}
