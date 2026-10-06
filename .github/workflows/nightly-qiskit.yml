@@ -256,10 +256,17 @@ jobs:
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         run: juliaup add 1.7
 
+      # build_tarballs.jl opens with `using BinaryBuilder`, which has to be
+      # installed first.  Use a named shared environment rather than the default
+      # one so the recipe's own directory cannot shadow it.
+      - name: Install BinaryBuilder for Julia 1.7
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        run: julia +1.7 --project=@binarybuilder -e 'using Pkg; Pkg.add("BinaryBuilder")'
+
       - name: Build Qiskit_jll locally
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         working-directory: ${{ runner.temp }}/Yggdrasil/Q/Qiskit
-        run: julia +1.7 build_tarballs.jl --deploy=local
+        run: julia +1.7 --project=@binarybuilder build_tarballs.jl --deploy=local
 
       - name: Develop the locally built Qiskit_jll
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
