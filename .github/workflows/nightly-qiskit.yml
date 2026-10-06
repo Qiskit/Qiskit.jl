@@ -4,10 +4,16 @@ on:
     # 07:17 UTC daily.  Off-the-hour to avoid the top-of-hour scheduling crush
     # on GitHub's runners.
     - cron: '17 7 * * *'
+  # Also run when the workflow itself changes, so it can be tested in the pull
+  # request that modifies it rather than only after landing on main.
+  pull_request:
+    paths:
+      - '.github/workflows/nightly-qiskit.yml'
+      - '.github/scripts/check_jll_compat.jl'
   workflow_dispatch:
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   test-against-latest-qiskit:
     name: Build Qiskit_jll and test
@@ -92,9 +98,13 @@ jobs:
 
       - name: Construct the (qiskit_hash, qiskit_jl_main) tuple
         id: tuple
+        env:
+          # On pull_request the checkout is an ephemeral merge commit whose SHA
+          # changes every time main moves, which would make the tuple useless.
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          qiskit_jl_main="$(git rev-parse HEAD)"
+          qiskit_jl_main="${PR_HEAD_SHA:-$(git rev-parse HEAD)}"
           key="${{ steps.release.outputs.hash }}-${qiskit_jl_main}"
           echo "qiskit_jl_main=${qiskit_jl_main}" >> "$GITHUB_OUTPUT"
           echo "key=${key}" >> "$GITHUB_OUTPUT"
@@ -130,7 +140,10 @@ jobs:
         id: decide
         run: |
           set -euo pipefail
-          if [ "${{ steps.state.outputs.cache-hit }}" = "true" ] \
+          # A pull request run exists to exercise the workflow itself, so it
+          # always proceeds; the cache is only an optimization for the nightly.
+          if [ "${{ github.event_name }}" != "pull_request" ] \
+             && [ "${{ steps.state.outputs.cache-hit }}" = "true" ] \
              && [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
             echo "This tuple has already been tested and [compat] admits the"
             echo "release under test; nothing to do."
@@ -157,6 +170,14 @@ jobs:
           recipe="$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
           if ! grep -q "$QISKIT_HASH" "$recipe"; then
             echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # A pull request run is exercising this workflow, so build anyway even
+          # though the recipe is unchanged -- otherwise there is nothing to test.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH}, but this is a pull request"
+            echo "run, so building anyway to exercise the workflow."
             exit 0
           fi
           echo "up_to_date=true" >> "$GITHUB_OUTPUT"
