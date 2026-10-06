@@ -24,10 +24,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Needed early: the compat check below runs before the build steps.
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: '1'
+      # juliaup provides both Julia versions this job needs.  It is not
+      # packaged for Ubuntu, so install it with cargo, which the runner has.
+      - name: Install juliaup
+        run: |
+          set -euo pipefail
+          if command -v juliaup >/dev/null 2>&1; then
+            echo "juliaup already available: $(command -v juliaup)"
+            exit 0
+          fi
+          cargo install juliaup
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install the Julia versions
+        run: |
+          set -euo pipefail
+          # Add `release` first: in a fresh juliaup depot the first channel
+          # added becomes the default, so a bare `julia` is a current Julia
+          # and only the BinaryBuilder steps need `julia +1.7`.
+          juliaup add release
+          juliaup add 1.7
+          juliaup status
 
       - name: Identify the highest-numbered Qiskit release
         id: release
@@ -281,22 +298,6 @@ jobs:
       - name: Show the resulting build_tarballs.jl
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         run: cat "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
-
-      - name: Install juliaup
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
-        run: |
-          set -euo pipefail
-          if command -v juliaup >/dev/null 2>&1; then
-            echo "juliaup already available: $(command -v juliaup)"
-            exit 0
-          fi
-          cargo install juliaup
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
-      # BinaryBuilder.jl does not support Julia newer than 1.7.
-      - name: juliaup add 1.7
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
-        run: juliaup add 1.7
 
       # build_tarballs.jl opens with `using BinaryBuilder`, which has to be
       # installed first.  Use a named shared environment rather than the default
