@@ -305,10 +305,18 @@ jobs:
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         run: julia +1.7 --project=@binarybuilder -e 'using Pkg; Pkg.add("BinaryBuilder")'
 
+      # Build only the runner's own platform.  The recipe also targets macOS,
+      # which BinaryBuilder refuses to build without agreeing to the Xcode
+      # license via BINARYBUILDER_AUTOMATIC_APPLE, and the other Linux
+      # triplets would cost build time without being exercised: the tests
+      # below run on this runner, so x86_64-linux-gnu is the only artifact
+      # that gets loaded.
       - name: Build Qiskit_jll locally
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         working-directory: ${{ runner.temp }}/Yggdrasil/Q/Qiskit
-        run: julia +1.7 --project=@binarybuilder build_tarballs.jl --deploy=local
+        run: |
+          julia +1.7 --project=@binarybuilder build_tarballs.jl \
+            --deploy=local x86_64-linux-gnu
 
       - name: Develop the locally built Qiskit_jll
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
