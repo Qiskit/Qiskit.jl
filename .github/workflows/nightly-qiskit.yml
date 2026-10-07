@@ -287,6 +287,10 @@ jobs:
       # WORKAROUND: remove once Qiskit 2.6.0 is released and the Python_jll
       # bound in the recipe is bumped upstream.
       #
+      # This is gated on `build` rather than `retarget`: it fixes a defect in
+      # the recipe, which is there whether or not we also had to point the
+      # recipe at a different release.
+      #
       # The recipe declares `compat="~3.11"` with no explicit build version.
       # When `build_version` is omitted, BinaryBuilder defaults it to the
       # minimum version satisfying compat -- here 3.11.0, which was never
@@ -295,7 +299,7 @@ jobs:
       # Pin it to a version that exists.  This affects the build only; the
       # published Qiskit_jll records "3.11.12-3.11" and installs fine.
       - name: Pin the Python_jll build version
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         run: |
           set -euo pipefail
           python3 - "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl" <<'PY'
@@ -327,7 +331,7 @@ jobs:
           PY
 
       - name: Show the resulting build_tarballs.jl
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         run: cat "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
 
       # build_tarballs.jl opens with `using BinaryBuilder`, which has to be
