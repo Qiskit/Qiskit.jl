@@ -323,11 +323,18 @@ jobs:
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
         run: julia -e 'using Pkg; pkg"dev ~/.julia/dev/Qiskit_jll"'
 
-      - name: Remove the Qiskit_jll compat constraint
+      # Retarget rather than delete the bound.  Deleting it leaves Qiskit_jll
+      # with no compat entry at all, which Aqua's deps_compat check reports as
+      # a failure.  Pinning it to the version under test keeps the check
+      # satisfied and admits the locally built JLL.
+      - name: Point the Qiskit_jll compat constraint at the release under test
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        env:
+          UNDER_TEST: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
           python3 - Project.toml <<'PY'
+          import os
           import re
           import sys
 
@@ -335,23 +342,30 @@ jobs:
           with open(path) as f:
               lines = f.readlines()
 
+          bound = "~" + os.environ["UNDER_TEST"]
+
           # Section-aware: `Qiskit_jll` appears under both [deps] and [compat],
-          # and removing the [deps] entry would break the package outright.
+          # and rewriting the [deps] entry would break the package outright.
           out = []
           section = None
-          removed = 0
+          rewritten = 0
           for line in lines:
               header = re.match(r"\s*\[([^\]]+)\]", line)
               if header:
                   section = header.group(1)
               elif section == "compat" and re.match(r"\s*Qiskit_jll\s*=", line):
-                  removed += 1
-                  continue
+                  line = f'Qiskit_jll = "{bound}"\n'
+                  rewritten += 1
               out.append(line)
+
+          if rewritten != 1:
+              raise SystemExit(
+                  f"expected 1 Qiskit_jll compat entry, rewrote {rewritten}"
+              )
 
           with open(path, "w") as f:
               f.writelines(out)
-          print(f"removed {removed} compat entry/entries for Qiskit_jll")
+          print(f"set Qiskit_jll compat to {bound}")
           PY
 
       - name: Show the modified Project.toml
