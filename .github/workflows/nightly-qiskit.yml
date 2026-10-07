@@ -177,6 +177,15 @@ jobs:
           set -euo pipefail
           git clone --depth 1 https://github.com/JuliaPackaging/Yggdrasil.git "$RUNNER_TEMP/Yggdrasil"
 
+      - name: Check whether the Qiskit_jll for this release is published
+        id: published
+        if: steps.decide.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          julia .github/scripts/check_jll_published.jl \
+            '${{ steps.release.outputs.version }}' | tee published.txt
+          grep '^published=' published.txt >> "$GITHUB_OUTPUT"
+
       - name: Compare the hash already in Yggdrasil
         id: ygg
         if: steps.decide.outputs.proceed == 'true'
@@ -185,35 +194,55 @@ jobs:
         run: |
           set -euo pipefail
           recipe="$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
+
+          # `retarget` says whether the recipe has to be pointed at this
+          # release before building.  When Yggdrasil already pins it, the
+          # recipe is left exactly as upstream has it, so what gets built --
+          # or installed -- is the real thing.
           if ! grep -q "$QISKIT_HASH" "$recipe"; then
-            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "retarget=true"
+              echo "build=true"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # A pull request run is exercising this workflow, so build anyway even
-          # though the recipe is unchanged -- otherwise there is nothing to test.
+
+          echo "retarget=false" >> "$GITHUB_OUTPUT"
+
+          # A pull request run is exercising this workflow, so build the
+          # unmodified recipe rather than stopping with nothing tested.
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
-            echo "Yggdrasil already pins ${QISKIT_HASH}, but this is a pull request"
-            echo "run, so building anyway to exercise the workflow."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH}; building it unmodified"
+            echo "because this is a pull request run."
             exit 0
           fi
-          echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+
           if [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
-            echo "Yggdrasil already pins ${QISKIT_HASH}; nothing to test."
-            echo "Yggdrasil already pins \`${QISKIT_HASH}\`; exited successfully." >> "$GITHUB_STEP_SUMMARY"
+            # The bound already admits this release, so the package's own CI
+            # covers it and there is nothing here to learn.
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH} and [compat] admits it;"
+            echo "nothing to test."
+            echo "Skipped: Yggdrasil already pins \`${QISKIT_HASH}\` and \`[compat]\` admits it." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # Nothing to build, but the bound would still keep the package from
-          # using this release, so this is a failure rather than a clean no-op.
-          echo "Yggdrasil already pins ${QISKIT_HASH}, but the Qiskit_jll [compat]" >&2
-          echo "bound in Project.toml excludes the release under test." >&2
-          echo "The compat bound needs widening." >&2
-          # shellcheck disable=SC2016  # backticks are Markdown, not command substitution
-          echo 'Failed: `[compat]` excludes the release under test; the bound needs widening.' >> "$GITHUB_STEP_SUMMARY"
-          exit 1
+
+          # Yggdrasil has this release but the bound excludes it, so widening
+          # the bound is worth testing.  Prefer the published JLL; if it has
+          # not been registered yet, build the unmodified recipe instead.
+          if [ "${{ steps.published.outputs.published }}" = "true" ]; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH} and the JLL is published;"
+            echo "testing against the published JLL."
+            exit 0
+          fi
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          echo "Yggdrasil already pins ${QISKIT_HASH} but the JLL is not yet"
+          echo "registered; building the unmodified recipe."
 
       - name: Update the version and hash in build_tarballs.jl
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
         env:
           NEW_VERSION: ${{ steps.release.outputs.version }}
           NEW_HASH: ${{ steps.release.outputs.hash }}
@@ -264,7 +293,7 @@ jobs:
       # Pin it to a version that exists.  This affects the build only; the
       # published Qiskit_jll records "3.11.12-3.11" and installs fine.
       - name: Pin the Python_jll build version
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
         run: |
           set -euo pipefail
           python3 - "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl" <<'PY'
@@ -296,14 +325,14 @@ jobs:
           PY
 
       - name: Show the resulting build_tarballs.jl
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
         run: cat "$RUNNER_TEMP/Yggdrasil/Q/Qiskit/build_tarballs.jl"
 
       # build_tarballs.jl opens with `using BinaryBuilder`, which has to be
       # installed first.  Use a named shared environment rather than the default
       # one so the recipe's own directory cannot shadow it.
       - name: Install BinaryBuilder for Julia 1.7
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         run: julia +1.7 --project=@binarybuilder -e 'using Pkg; Pkg.add("BinaryBuilder")'
 
       # Build only the runner's own platform.  The recipe also targets macOS,
@@ -313,14 +342,14 @@ jobs:
       # below run on this runner, so x86_64-linux-gnu is the only artifact
       # that gets loaded.
       - name: Build Qiskit_jll locally
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         working-directory: ${{ runner.temp }}/Yggdrasil/Q/Qiskit
         run: |
           julia +1.7 --project=@binarybuilder build_tarballs.jl \
             --deploy=local x86_64-linux-gnu
 
       - name: Develop the locally built Qiskit_jll
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         run: julia -e 'using Pkg; pkg"dev ~/.julia/dev/Qiskit_jll"'
 
       # Retarget rather than delete the bound.  Deleting it leaves Qiskit_jll
@@ -328,7 +357,7 @@ jobs:
       # a failure.  Pinning it to the version under test keeps the check
       # satisfied and admits the locally built JLL.
       - name: Point the Qiskit_jll compat constraint at the release under test
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true'
         env:
           UNDER_TEST: ${{ steps.release.outputs.version }}
         run: |
@@ -369,15 +398,15 @@ jobs:
           PY
 
       - name: Show the modified Project.toml
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true'
         run: cat Project.toml
 
       - name: Develop this checkout
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true'
         run: julia -e 'using Pkg; pkg"dev ."'
 
       - name: Test Qiskit.jl
-        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.up_to_date == 'false'
+        if: steps.decide.outputs.proceed == 'true'
         run: julia -e 'using Pkg; Pkg.test("Qiskit")'
 
       # Record the tuple only on success, so a failing run is retried tomorrow
