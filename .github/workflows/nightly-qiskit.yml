@@ -181,6 +181,7 @@ jobs:
             {
               echo "retarget=true"
               echo "build=true"
+              echo "test=true"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -190,34 +191,52 @@ jobs:
           # A pull request run is exercising this workflow, so build the
           # unmodified recipe rather than stopping with nothing tested.
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "build=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "build=true"
+              echo "test=true"
+            } >> "$GITHUB_OUTPUT"
             echo "Yggdrasil already pins ${QISKIT_HASH}; building it unmodified"
             echo "because this is a pull request run."
             exit 0
           fi
 
-          if [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
-            # The bound already admits this release, so the package's own CI
-            # covers it and there is nothing here to learn.
-            echo "build=false" >> "$GITHUB_OUTPUT"
-            echo "Yggdrasil already pins ${QISKIT_HASH} and [compat] admits it;"
-            echo "nothing to test."
-            echo "Skipped: Yggdrasil already pins \`${QISKIT_HASH}\` and \`[compat]\` admits it." >> "$GITHUB_STEP_SUMMARY"
+          # Yggdrasil has this release, so the recipe is left exactly as
+          # upstream wrote it.  Whether there is anything left to learn
+          # depends on what the package's own CI would already be resolving.
+          if [ "${{ steps.published.outputs.published }}" != "true" ]; then
+            # The JLL is not in the registry yet, so the package's own CI is
+            # still resolving an older one and nothing has tested this release.
+            # Build the unmodified recipe: there is no published JLL to install.
+            {
+              echo "build=true"
+              echo "test=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH} but the JLL is not yet"
+            echo "registered; building the unmodified recipe."
             exit 0
           fi
 
-          # Yggdrasil has this release but the bound excludes it, so widening
-          # the bound is worth testing.  Prefer the published JLL; if it has
-          # not been registered yet, build the unmodified recipe instead.
-          if [ "${{ steps.published.outputs.published }}" = "true" ]; then
-            echo "build=false" >> "$GITHUB_OUTPUT"
-            echo "Yggdrasil already pins ${QISKIT_HASH} and the JLL is published;"
-            echo "testing against the published JLL."
+          if [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
+            # The JLL is published and the bound admits it, so the package's
+            # own CI is already resolving this very release: nothing to learn.
+            {
+              echo "build=false"
+              echo "test=false"
+            } >> "$GITHUB_OUTPUT"
+            echo "Yggdrasil already pins ${QISKIT_HASH}, the JLL is published"
+            echo "and [compat] admits it; nothing to test."
+            echo "Skipped: the published \`Qiskit_jll\` for this release is already covered by CI." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          echo "build=true" >> "$GITHUB_OUTPUT"
-          echo "Yggdrasil already pins ${QISKIT_HASH} but the JLL is not yet"
-          echo "registered; building the unmodified recipe."
+
+          # The JLL is published but the bound excludes it, so widening the
+          # bound is the thing worth testing.  Install the published JLL.
+          {
+            echo "build=false"
+            echo "test=true"
+          } >> "$GITHUB_OUTPUT"
+          echo "Yggdrasil already pins ${QISKIT_HASH} and the JLL is published,"
+          echo "but [compat] excludes it; testing against the published JLL."
 
       - name: Update the version and hash in build_tarballs.jl
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.retarget == 'true'
@@ -335,7 +354,7 @@ jobs:
       # a failure.  Pinning it to the version under test keeps the check
       # satisfied and admits the locally built JLL.
       - name: Point the Qiskit_jll compat constraint at the release under test
-        if: steps.decide.outputs.proceed == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.test == 'true'
         env:
           UNDER_TEST: ${{ steps.release.outputs.version }}
         run: |
@@ -376,15 +395,15 @@ jobs:
           PY
 
       - name: Show the modified Project.toml
-        if: steps.decide.outputs.proceed == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.test == 'true'
         run: cat Project.toml
 
       - name: Develop this checkout
-        if: steps.decide.outputs.proceed == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.test == 'true'
         run: julia -e 'using Pkg; pkg"dev ."'
 
       - name: Test Qiskit.jl
-        if: steps.decide.outputs.proceed == 'true'
+        if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.test == 'true'
         run: julia -e 'using Pkg; Pkg.test("Qiskit")'
 
       # Record the tuple only on success, so a failing run is retried tomorrow
