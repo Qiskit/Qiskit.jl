@@ -24,9 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Pinned to 1.12 rather than '1': BinaryBuilder 0.6.6 calls the one-argument
+      # `Pkg.Registry.registry_info(::PkgEntry)`, which Julia 1.13 replaced with
+      # a two-argument form, so running the recipe there fails with a
+      # MethodError.  The test suite is happy on 1.12 as well ([compat] requires
+      # 1.10), and the regular CI matrix covers newer Julia versions.
       - uses: julia-actions/setup-julia@v3
         with:
-          version: '1'
+          version: '1.12'
 
       - name: Identify the highest-numbered Qiskit release
         id: release
