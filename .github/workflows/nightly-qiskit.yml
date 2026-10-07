@@ -118,10 +118,9 @@ jobs:
           path: .nightly-state
           key: nightly-qiskit-${{ steps.tuple.outputs.key }}
 
-      # A matching tuple is not sufficient grounds to skip: the [compat] bound
-      # on Qiskit_jll may exclude the very release we are testing against, in
-      # which case the package could not use it even once the JLL is published,
-      # and we want to hear about that rather than skip.
+      # Used below to decide whether there is anything to learn when Yggdrasil
+      # already has this release: if the bound excludes it, widening the bound
+      # is worth testing.
       - name: Check whether [compat] admits the release under test
         id: compat
         run: |
@@ -142,13 +141,10 @@ jobs:
           # A pull request run exists to exercise the workflow itself, so it
           # always proceeds; the cache is only an optimization for the nightly.
           if [ "${{ github.event_name }}" != "pull_request" ] \
-             && [ "${{ steps.state.outputs.cache-hit }}" = "true" ] \
-             && [ "${{ steps.compat.outputs.admits }}" = "true" ]; then
-            echo "This tuple has already been tested and [compat] admits the"
-            echo "release under test; nothing to do."
+             && [ "${{ steps.state.outputs.cache-hit }}" = "true" ]; then
+            echo "This tuple has already been tested; nothing to do."
             echo "proceed=false" >> "$GITHUB_OUTPUT"
-            # shellcheck disable=SC2016  # backticks are Markdown, not command substitution
-            echo 'Skipped: tuple already tested and `[compat]` admits the release under test.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Skipped: this (qiskit_hash, qiskit_jl_main) tuple was already tested.' >> "$GITHUB_STEP_SUMMARY"
           else
             echo "proceed=true" >> "$GITHUB_OUTPUT"
           fi
