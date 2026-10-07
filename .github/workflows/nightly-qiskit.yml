@@ -24,27 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # juliaup provides both Julia versions this job needs.  It is not
-      # packaged for Ubuntu, so install it with cargo, which the runner has.
-      - name: Install juliaup
-        run: |
-          set -euo pipefail
-          if command -v juliaup >/dev/null 2>&1; then
-            echo "juliaup already available: $(command -v juliaup)"
-            exit 0
-          fi
-          cargo install juliaup
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
-      - name: Install the Julia versions
-        run: |
-          set -euo pipefail
-          # Add `release` first: in a fresh juliaup depot the first channel
-          # added becomes the default, so a bare `julia` is a current Julia
-          # and only the BinaryBuilder steps need `julia +1.7`.
-          juliaup add release
-          juliaup add 1.7
-          juliaup status
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
 
       - name: Identify the highest-numbered Qiskit release
         id: release
@@ -331,9 +313,9 @@ jobs:
       # build_tarballs.jl opens with `using BinaryBuilder`, which has to be
       # installed first.  Use a named shared environment rather than the default
       # one so the recipe's own directory cannot shadow it.
-      - name: Install BinaryBuilder for Julia 1.7
+      - name: Install BinaryBuilder
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
-        run: julia +1.7 --project=@binarybuilder -e 'using Pkg; Pkg.add("BinaryBuilder")'
+        run: julia --project=@binarybuilder -e 'using Pkg; Pkg.add("BinaryBuilder")'
 
       # Build only the runner's own platform.  The recipe also targets macOS,
       # which BinaryBuilder refuses to build without agreeing to the Xcode
@@ -345,7 +327,7 @@ jobs:
         if: steps.decide.outputs.proceed == 'true' && steps.ygg.outputs.build == 'true'
         working-directory: ${{ runner.temp }}/Yggdrasil/Q/Qiskit
         run: |
-          julia +1.7 --project=@binarybuilder build_tarballs.jl \
+          julia --project=@binarybuilder build_tarballs.jl \
             --deploy=local x86_64-linux-gnu
 
       - name: Develop the locally built Qiskit_jll
