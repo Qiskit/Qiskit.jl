@@ -10,9 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: qk_circuit_to_dag, qk_dag_to_circuit, qk_dag_free,
-    qk_dag_num_qubits, qk_dag_num_clbits, qk_dag_num_op_nodes,
-    qk_dag_topological_op_nodes, qk_dag_get_instruction,
+import .C:
+    qk_circuit_to_dag,
+    qk_dag_to_circuit,
+    qk_dag_free,
+    qk_dag_num_qubits,
+    qk_dag_num_clbits,
+    qk_dag_num_op_nodes,
+    qk_dag_topological_op_nodes,
+    qk_dag_get_instruction,
     QkDag
 
 """
@@ -107,7 +113,7 @@ function Base.getproperty(node::DAGNode, sym::Symbol)
     end
 end
 
-function Base.propertynames(::DAGNode; private::Bool = false)
+function Base.propertynames(::DAGNode; private::Bool=false)
     (:name, :qubits, :clbits, :params, :num_qubits, :num_clbits, :num_params)
 end
 
@@ -144,7 +150,10 @@ function Base.show(io::IO, dag::DAGCircuit)
     if dag.ptr == C_NULL
         print(io, "DAGCircuit(NULL)")
     else
-        print(io, "DAGCircuit($(dag.num_qubits), $(dag.num_clbits); $(dag.num_op_nodes) nodes)")
+        print(
+            io,
+            "DAGCircuit($(dag.num_qubits), $(dag.num_clbits); $(dag.num_op_nodes) nodes)",
+        )
     end
 end
 
@@ -152,7 +161,10 @@ function Base.show(io::IO, ::MIME"text/plain", dag::DAGCircuit)
     if dag.ptr == C_NULL
         print(io, "DAGCircuit(NULL)")
     else
-        print(io, "DAGCircuit with $(dag.num_qubits) qubits, $(dag.num_clbits) clbits\n  nodes: $(dag.num_op_nodes)")
+        print(
+            io,
+            "DAGCircuit with $(dag.num_qubits) qubits, $(dag.num_clbits) clbits\n  nodes: $(dag.num_op_nodes)",
+        )
     end
 end
 
@@ -182,7 +194,7 @@ function Base.getproperty(dag::DAGCircuit, sym::Symbol)
     end
 end
 
-function Base.propertynames(::DAGCircuit; private::Bool = false)
+function Base.propertynames(::DAGCircuit; private::Bool=false)
     (:num_qubits, :num_clbits, :num_op_nodes)
 end
 

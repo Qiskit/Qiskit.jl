@@ -10,7 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .LibQiskit: QkDag, QkDagNodeType, QkOperationKind, QkDagNeighbors, QkGate, QkComplex64
+import .LibQiskit:
+    QkDag, QkDagNodeType, QkOperationKind, QkDagNeighbors, QkGate, QkComplex64
 
 function check_not_null(ptr::Ptr{QkDag})::Nothing
     if ptr == C_NULL
@@ -81,7 +82,7 @@ function qk_dag_get_instruction(dag::Ptr{QkDag}, index::Integer)::CircuitInstruc
         unsafe_string(inst.name),
         collect(Int, unsafe_wrap(Array, inst.qubits, inst.num_qubits)),
         collect(Int, unsafe_wrap(Array, inst.clbits, inst.num_clbits)),
-        params
+        params,
     )
     LibQiskit.qk_circuit_instruction_clear(inst_ref)
     return retval
@@ -132,12 +133,20 @@ function qk_dag_op_node_clbits(dag::Ptr{QkDag}, node::UInt32)::Vector{Int}
     collect(Int, unsafe_wrap(Array, ptr, n))
 end
 
-function qk_dag_op_node_gate_op(dag::Ptr{QkDag}, node::UInt32, out_params::Ptr{Cdouble})::QkGate
+function qk_dag_op_node_gate_op(
+    dag::Ptr{QkDag},
+    node::UInt32,
+    out_params::Ptr{Cdouble},
+)::QkGate
     check_not_null(dag)
     LibQiskit.qk_dag_op_node_gate_op(dag, node, out_params)
 end
 
-function qk_dag_op_node_unitary(dag::Ptr{QkDag}, node::UInt32, out::Ptr{QkComplex64})::Nothing
+function qk_dag_op_node_unitary(
+    dag::Ptr{QkDag},
+    node::UInt32,
+    out::Ptr{QkComplex64},
+)::Nothing
     check_not_null(dag)
     LibQiskit.qk_dag_op_node_unitary(dag, node, out)
 end
@@ -182,7 +191,13 @@ function qk_dag_clbit_out_node(dag::Ptr{QkDag}, clbit::UInt32)::UInt32
     LibQiskit.qk_dag_clbit_out_node(dag, clbit)
 end
 
-function qk_dag_apply_gate(dag::Ptr{QkDag}, gate::QkGate, qubits::AbstractVector{<:Integer}, params::Union{Nothing,AbstractVector{<:Real}}, front::Bool)::UInt32
+function qk_dag_apply_gate(
+    dag::Ptr{QkDag},
+    gate::QkGate,
+    qubits::AbstractVector{<:Integer},
+    params::Union{Nothing,AbstractVector{<:Real}},
+    front::Bool,
+)::UInt32
     check_not_null(dag)
     qubits0 = UInt32.(qubits)
     if params === nothing || length(params) == 0
@@ -193,7 +208,12 @@ function qk_dag_apply_gate(dag::Ptr{QkDag}, gate::QkGate, qubits::AbstractVector
     end
 end
 
-function qk_dag_apply_measure(dag::Ptr{QkDag}, qubit::Integer, clbit::Integer, front::Bool)::UInt32
+function qk_dag_apply_measure(
+    dag::Ptr{QkDag},
+    qubit::Integer,
+    clbit::Integer,
+    front::Bool,
+)::UInt32
     check_not_null(dag)
     LibQiskit.qk_dag_apply_measure(dag, UInt32(qubit), UInt32(clbit), front)
 end
@@ -203,21 +223,41 @@ function qk_dag_apply_reset(dag::Ptr{QkDag}, qubit::Integer, front::Bool)::UInt3
     LibQiskit.qk_dag_apply_reset(dag, UInt32(qubit), front)
 end
 
-function qk_dag_apply_barrier(dag::Ptr{QkDag}, qubits::AbstractVector{<:Integer}, front::Bool)::UInt32
+function qk_dag_apply_barrier(
+    dag::Ptr{QkDag},
+    qubits::AbstractVector{<:Integer},
+    front::Bool,
+)::UInt32
     check_not_null(dag)
     qubits0 = UInt32.(qubits)
     LibQiskit.qk_dag_apply_barrier(dag, qubits0, UInt32(length(qubits0)), front)
 end
 
-function qk_dag_apply_unitary(dag::Ptr{QkDag}, matrix::AbstractMatrix{<:Number}, qubits::AbstractVector{<:Integer}, front::Bool)::UInt32
+function qk_dag_apply_unitary(
+    dag::Ptr{QkDag},
+    matrix::AbstractMatrix{<:Number},
+    qubits::AbstractVector{<:Integer},
+    front::Bool,
+)::UInt32
     check_not_null(dag)
     num_qubits = length(qubits)
     qubits0 = UInt32.(qubits)
     row_major_matrix = convert(Matrix{ComplexF64}, transpose(matrix))
-    LibQiskit.qk_dag_apply_unitary(dag, row_major_matrix, qubits0, UInt32(num_qubits), front)
+    LibQiskit.qk_dag_apply_unitary(
+        dag,
+        row_major_matrix,
+        qubits0,
+        UInt32(num_qubits),
+        front,
+    )
 end
 
-function qk_dag_compose(dag::Ptr{QkDag}, other::Ptr{QkDag}, qubits::AbstractVector{<:Integer}, clbits::AbstractVector{<:Integer})::Nothing
+function qk_dag_compose(
+    dag::Ptr{QkDag},
+    other::Ptr{QkDag},
+    qubits::AbstractVector{<:Integer},
+    clbits::AbstractVector{<:Integer},
+)::Nothing
     check_not_null(dag)
     check_not_null(other)
     qubits0 = UInt32.(qubits)
@@ -226,17 +266,31 @@ function qk_dag_compose(dag::Ptr{QkDag}, other::Ptr{QkDag}, qubits::AbstractVect
     nothing
 end
 
-function qk_dag_substitute_node_with_dag(dag::Ptr{QkDag}, node::UInt32, replacement::Ptr{QkDag})::Nothing
+function qk_dag_substitute_node_with_dag(
+    dag::Ptr{QkDag},
+    node::UInt32,
+    replacement::Ptr{QkDag},
+)::Nothing
     check_not_null(dag)
     check_not_null(replacement)
     LibQiskit.qk_dag_substitute_node_with_dag(dag, node, replacement)
     nothing
 end
 
-function qk_dag_substitute_node_with_unitary(dag::Ptr{QkDag}, node::UInt32, matrix::AbstractMatrix{<:Number}, num_qubits::Integer)::Nothing
+function qk_dag_substitute_node_with_unitary(
+    dag::Ptr{QkDag},
+    node::UInt32,
+    matrix::AbstractMatrix{<:Number},
+    num_qubits::Integer,
+)::Nothing
     check_not_null(dag)
     row_major_matrix = convert(Matrix{ComplexF64}, transpose(matrix))
-    LibQiskit.qk_dag_substitute_node_with_unitary(dag, node, row_major_matrix, UInt32(num_qubits))
+    LibQiskit.qk_dag_substitute_node_with_unitary(
+        dag,
+        node,
+        row_major_matrix,
+        UInt32(num_qubits),
+    )
     nothing
 end
 

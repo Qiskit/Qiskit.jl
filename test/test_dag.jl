@@ -15,7 +15,8 @@ using Qiskit.C: LibQiskit
 function _dag_find_node_by_name(dag_ptr, name)
     order = qk_dag_topological_op_nodes(dag_ptr)
     for i in order
-        inst_ref = Ref(LibQiskit.QkCircuitInstruction(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0))
+        inst_ref =
+            Ref(LibQiskit.QkCircuitInstruction(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0))
         LibQiskit.qk_dag_get_instruction(dag_ptr, i, inst_ref)
         n = unsafe_string(inst_ref[].name)
         LibQiskit.qk_circuit_instruction_clear(inst_ref)
@@ -393,7 +394,8 @@ end
         @test qk_dag_num_op_nodes(dag_ptr) == 2
 
         order = qk_dag_topological_op_nodes(dag_ptr)
-        inst_ref = Ref(LibQiskit.QkCircuitInstruction(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0))
+        inst_ref =
+            Ref(LibQiskit.QkCircuitInstruction(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0))
         LibQiskit.qk_dag_get_instruction(dag_ptr, order[1], inst_ref)
         first_name = unsafe_string(inst_ref[].name)
         LibQiskit.qk_circuit_instruction_clear(inst_ref)
