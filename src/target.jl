@@ -203,6 +203,47 @@ function Base.show(io::IO, ::MIME"text/plain", obj::Target)
     end
 end
 
+"""
+    Qiskit.add_property!(entry::TargetEntry, qubits, duration, error)
+
+Add a property to a `TargetEntry` for the given `qubits` with specified
+`duration` and `error`. Mutates and returns `entry`.
+
+# Examples
+```julia
+entry = Qiskit.target_entry_gate(QkGate_X)
+Qiskit.add_property!(entry, [1], 1.8e-9, 0.8e-6)
+```
+"""
+function add_property!(
+    entry::TargetEntry,
+    qubits::AbstractVector{<:Integer},
+    duration::Real,
+    error::Real,
+)::TargetEntry
+    qk_target_entry_add_property(entry, qubits, duration, error)
+    return entry
+end
+
+"""
+    Qiskit.add_instruction!(target::Target, entry::TargetEntry)
+
+Add a gate or instruction `entry` to a `Target`. This consumes `entry`; do not
+use it afterward. Mutates and returns `target`.
+
+# Examples
+```julia
+target = Qiskit.Target(5)
+entry = Qiskit.target_entry_gate(QkGate_X)
+Qiskit.add_property!(entry, [1], 1.8e-9, 0.8e-6)
+Qiskit.add_instruction!(target, entry)
+```
+"""
+function add_instruction!(target::Target, entry::TargetEntry)::Target
+    qk_target_add_instruction(target, entry)
+    return target
+end
+
 function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
     try
         qk_target_add_instruction(target.ptr, entry.ptr)
@@ -218,7 +259,10 @@ end
 #qk_target_update_property
 
 @compat public Target,
+TargetEntry,
 target_entry_gate,
 target_entry_fixed,
 target_entry_measure,
-target_entry_reset
+target_entry_reset,
+add_property!,
+add_instruction!
