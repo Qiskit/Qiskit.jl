@@ -118,7 +118,7 @@ jobs:
       # on this exact key means we already ran this tuple to completion.
       - name: Check whether this tuple already ran
         id: state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .nightly-state
           key: nightly-qiskit-${{ steps.tuple.outputs.key }}
@@ -426,7 +426,7 @@ jobs:
 
       - name: Save the tuple to the cache
         if: success() && steps.decide.outputs.proceed == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .nightly-state
           key: nightly-qiskit-${{ steps.tuple.outputs.key }}
