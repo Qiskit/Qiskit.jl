@@ -10,8 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import .C: QkTargetEntry, qk_target_entry_free, qk_target_entry_num_properties, qk_target_entry_add_property
-import .C: QkTarget, qk_target_free, qk_target_num_qubits, qk_target_num_instructions, qk_target_add_instruction
+import .C:
+    QkTargetEntry,
+    qk_target_entry_free,
+    qk_target_entry_num_properties,
+    qk_target_entry_add_property
+import .C:
+    QkTarget,
+    qk_target_free,
+    qk_target_num_qubits,
+    qk_target_num_instructions,
+    qk_target_add_instruction
 
 """
     TargetEntry
@@ -43,11 +52,9 @@ end
 target_entry_gate(operation::QkGate)::TargetEntry =
     TargetEntry(LibQiskit.qk_target_entry_new(operation))
 
-target_entry_measure()::TargetEntry =
-    TargetEntry(LibQiskit.qk_target_entry_new_measure())
+target_entry_measure()::TargetEntry = TargetEntry(LibQiskit.qk_target_entry_new_measure())
 
-target_entry_reset()::TargetEntry =
-    TargetEntry(LibQiskit.qk_target_entry_new_reset())
+target_entry_reset()::TargetEntry = TargetEntry(LibQiskit.qk_target_entry_new_reset())
 
 function target_entry_fixed(operation::QkGate, params::AbstractVector{<:Real})::TargetEntry
     if length(params) != qk_gate_num_params(operation)
@@ -56,11 +63,13 @@ function target_entry_fixed(operation::QkGate, params::AbstractVector{<:Real})::
     TargetEntry(LibQiskit.qk_target_entry_new_fixed(operation, params, C_NULL))
 end
 
-qk_target_entry_num_properties(obj::TargetEntry)::Int = qk_target_entry_num_properties(obj.ptr)
+qk_target_entry_num_properties(obj::TargetEntry)::Int =
+    qk_target_entry_num_properties(obj.ptr)
 
-qk_target_entry_add_property(target_entry::TargetEntry, args...) = qk_target_entry_add_property(target_entry.ptr, args...)
+qk_target_entry_add_property(target_entry::TargetEntry, args...) =
+    qk_target_entry_add_property(target_entry.ptr, args...)
 
-function Base.propertynames(obj::TargetEntry; private::Bool = false)
+function Base.propertynames(obj::TargetEntry; private::Bool=false)
     union(fieldnames(typeof(obj)), (:num_properties,))
 end
 
@@ -135,11 +144,9 @@ function Base.copy(obj::Target)::Target
     Target(LibQiskit.qk_target_copy(obj.ptr))
 end
 
-qk_target_num_qubits(obj::Target) =
-    qk_target_num_qubits(obj.ptr)
+qk_target_num_qubits(obj::Target) = qk_target_num_qubits(obj.ptr)
 
-qk_target_num_instructions(obj::Target) =
-    qk_target_num_instructions(obj.ptr)
+qk_target_num_instructions(obj::Target) = qk_target_num_instructions(obj.ptr)
 
 #qk_target_dt
 
@@ -147,8 +154,19 @@ qk_target_num_instructions(obj::Target) =
 
 #qk_target_[...]
 
-function Base.propertynames(obj::Target; private::Bool = false)
-    union(fieldnames(typeof(obj)), (:num_qubits, :num_instructions, :dt, :granularity, :min_length, :pulse_alignment, :acquire_alignment))
+function Base.propertynames(obj::Target; private::Bool=false)
+    union(
+        fieldnames(typeof(obj)),
+        (
+            :num_qubits,
+            :num_instructions,
+            :dt,
+            :granularity,
+            :min_length,
+            :pulse_alignment,
+            :acquire_alignment,
+        ),
+    )
 end
 
 # Base.setproperty!
@@ -167,7 +185,10 @@ function Base.show(io::IO, obj::Target)
     if obj.ptr == C_NULL
         print(io, "Target(NULL)")
     else
-        print(io, "Target($(qk_target_num_qubits(obj)); $(qk_target_num_instructions(obj)) instructions)")
+        print(
+            io,
+            "Target($(qk_target_num_qubits(obj)); $(qk_target_num_instructions(obj)) instructions)",
+        )
     end
 end
 
@@ -175,16 +196,29 @@ function Base.show(io::IO, ::MIME"text/plain", obj::Target)
     if obj.ptr == C_NULL
         print(io, "Target(NULL)")
     else
-        print(io, "Target with $(qk_target_num_qubits(obj)) qubits\n  instructions: $(qk_target_num_instructions(obj))")
+        print(
+            io,
+            "Target with $(qk_target_num_qubits(obj)) qubits\n  instructions: $(qk_target_num_instructions(obj))",
+        )
     end
 end
 
 function qk_target_add_instruction(target::Target, entry::TargetEntry)::Nothing
-    qk_target_add_instruction(target.ptr, entry.ptr)
-    entry.ptr = C_NULL
+    try
+        qk_target_add_instruction(target.ptr, entry.ptr)
+    finally
+        # Qiskit takes ownership of a valid entry whether or not the instruction is
+        # successfully added, so clear the pointer always to prevent the
+        # finalizer from freeing it a second time.
+        entry.ptr = C_NULL
+    end
     nothing
 end
 
 #qk_target_update_property
 
-@compat public Target, target_entry_gate, target_entry_fixed, target_entry_measure, target_entry_reset
+@compat public Target,
+target_entry_gate,
+target_entry_fixed,
+target_entry_measure,
+target_entry_reset

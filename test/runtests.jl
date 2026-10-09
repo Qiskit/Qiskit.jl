@@ -18,7 +18,11 @@ using Unitful
 
 @testset "Qiskit.jl" begin
     @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(Qiskit)
+        # The downgrade CI job promotes the test-only extras into [deps] so it
+        # can lock their minimum versions, which Aqua would flag as stale.
+        stale_ignore =
+            get(ENV, "QISKIT_DOWNGRADE_CI", "") == "true" ? [:Aqua, :Unitful] : Symbol[]
+        Aqua.test_all(Qiskit; stale_deps=(; ignore=stale_ignore))
     end
     include("test_circuit.jl")
     include("test_operations.jl")

@@ -59,6 +59,49 @@ jobs:
         if: matrix.version == '1.10' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
         with:
           files: lcov.info
+  downgrade:
+    name: Downgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          # Must match `julia_version` below: resolving for one Julia version
+          # and running on another breaks stdlib JLLs (e.g. OpenSSL_jll).
+          version: '1.10'
+          arch: x64
+      - uses: julia-actions/julia-downgrade-compat@v2
+        with:
+          projects: '.'
+          mode: forcedeps
+          skip: Libdl,Test
+          julia_version: '1.10'
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+        env:
+          QISKIT_DOWNGRADE_CI: 'true'
+        with:
+          allow_reresolve: false
+          force_latest_compatible_version: false
+  format:
+    name: Format check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
+      contents: read
+      pull-requests: write # needed to allow reviewdog to post formatting suggestions
+    steps:
+      # This action runs its own checkout, setup-julia, and cache steps.
+      - uses: julia-actions/julia-format@v4
+        with:
+          # Pin the major version.  The action defaults to JuliaFormatter 1.x,
+          # whose output differs from 2.x, including mangling `@doc` strings.
+          version: '2'
   docs:
     name: Documentation
     runs-on: ubuntu-latest
