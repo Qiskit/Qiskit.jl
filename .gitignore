@@ -5,6 +5,3 @@
 /docs/Manifest*.toml
 /docs/build/
 /format/Manifest*.toml
-
-gen/Manifest.toml
-gen/Lib*.jl

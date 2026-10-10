@@ -121,6 +121,96 @@ end
     QkBlocksMode_Keep = 0x0000000000000001
 end
 
+@cenum QkExprNodeKind::UInt8 begin
+    QkExprNodeKind_Unary = 0x0000000000000000
+    QkExprNodeKind_Binary = 0x0000000000000001
+    QkExprNodeKind_Cast = 0x0000000000000002
+    QkExprNodeKind_Value = 0x0000000000000003
+    QkExprNodeKind_Var = 0x0000000000000004
+    QkExprNodeKind_Stretch = 0x0000000000000005
+    QkExprNodeKind_Index = 0x0000000000000006
+end
+
+@cenum QkBinaryOpType::UInt8 begin
+    QkBinaryOpType_BitAnd = 0x0000000000000001
+    QkBinaryOpType_BitOr = 0x0000000000000002
+    QkBinaryOpType_BitXor = 0x0000000000000003
+    QkBinaryOpType_LogicAnd = 0x0000000000000004
+    QkBinaryOpType_LogicOr = 0x0000000000000005
+    QkBinaryOpType_Equal = 0x0000000000000006
+    QkBinaryOpType_NotEqual = 0x0000000000000007
+    QkBinaryOpType_Less = 0x0000000000000008
+    QkBinaryOpType_LessEqual = 0x0000000000000009
+    QkBinaryOpType_Greater = 0x000000000000000a
+    QkBinaryOpType_GreaterEqual = 0x000000000000000b
+    QkBinaryOpType_ShiftLeft = 0x000000000000000c
+    QkBinaryOpType_ShiftRight = 0x000000000000000d
+    QkBinaryOpType_Add = 0x000000000000000e
+    QkBinaryOpType_Sub = 0x000000000000000f
+    QkBinaryOpType_Mul = 0x0000000000000010
+    QkBinaryOpType_Div = 0x0000000000000011
+end
+
+@cenum QkExprType::UInt8 begin
+    QkExprType_Bool = 0x0000000000000000
+    QkExprType_Duration = 0x0000000000000001
+    QkExprType_Float = 0x0000000000000002
+    QkExprType_Uint = 0x0000000000000003
+end
+
+@cenum QkUnaryOpType::UInt8 begin
+    QkUnaryOpType_BitNot = 0x0000000000000001
+    QkUnaryOpType_LogicNot = 0x0000000000000002
+    QkUnaryOpType_Negate = 0x0000000000000003
+end
+
+@cenum QkDurationType::UInt8 begin
+    QkDurationType_Dt = 0x0000000000000000
+    QkDurationType_Ps = 0x0000000000000001
+    QkDurationType_Ns = 0x0000000000000002
+    QkDurationType_Us = 0x0000000000000003
+    QkDurationType_Ms = 0x0000000000000004
+    QkDurationType_S = 0x0000000000000005
+end
+
+@cenum QkControlFlowKind::UInt8 begin
+    QkControlFlowKind_Box = 0x0000000000000000
+    QkControlFlowKind_BreakLoop = 0x0000000000000001
+    QkControlFlowKind_ContinueLoop = 0x0000000000000002
+    QkControlFlowKind_ForLoop = 0x0000000000000003
+    QkControlFlowKind_IfElse = 0x0000000000000004
+    QkControlFlowKind_Switch = 0x0000000000000005
+    QkControlFlowKind_While = 0x0000000000000006
+end
+
+@cenum QkConditionType::UInt8 begin
+    QkConditionType_ClBit = 0x0000000000000000
+    QkConditionType_ClReg = 0x0000000000000001
+    QkConditionType_Expr = 0x0000000000000002
+end
+
+@cenum QkBoxDurationKind::UInt8 begin
+    QkBoxDurationKind_NoDuration = 0x0000000000000000
+    QkBoxDurationKind_Duration = 0x0000000000000001
+    QkBoxDurationKind_Expr = 0x0000000000000002
+end
+
+@cenum QkLoopCollectionType::UInt8 begin
+    QkLoopCollectionType_List = 0x0000000000000000
+    QkLoopCollectionType_Range = 0x0000000000000001
+end
+
+@cenum QkLoopParamKind::UInt8 begin
+    QkLoopParamKind_NoLoopParam = 0x0000000000000000
+    QkLoopParamKind_Parameter = 0x0000000000000001
+    QkLoopParamKind_Variable = 0x0000000000000002
+end
+
+@cenum QkSymbolType::UInt8 begin
+    QkSymbolType_Standalone = 0x0000000000000000
+    QkSymbolType_Element = 0x0000000000000001
+end
+
 @cenum QkDagNodeType::UInt8 begin
     QkDagNodeType_Operation = 0x0000000000000000
     QkDagNodeType_QubitIn = 0x0000000000000001
@@ -143,17 +233,23 @@ end
     QkBitTerm_One = 0x0000000000000005
 end
 
+mutable struct QkControlFlowInstruction end
+
 mutable struct QkCircuit end
 
 mutable struct QkClassicalRegister end
 
 mutable struct QkDag end
 
+mutable struct QkExprNode end
+
 mutable struct QkParam end
 
 mutable struct QkQuantumRegister end
 
 mutable struct QkObs end
+
+mutable struct QkStretch end
 
 mutable struct QkTarget end
 
@@ -166,6 +262,10 @@ mutable struct QkTranspilerStageState end
 mutable struct QkVF2LayoutConfiguration end
 
 mutable struct QkVF2LayoutResult end
+
+mutable struct QkValue end
+
+mutable struct QkVar end
 
 struct QkOpCount
     name::Ptr{Cchar}
@@ -205,6 +305,119 @@ struct QkCircuitDrawerConfig
     bundle_cregs::Bool
     merge_wires::Bool
     fold::Csize_t
+end
+
+struct QkExprTypeInfo
+    ty::QkExprType
+    width::UInt32
+end
+
+struct QkBinaryExprInfo
+    op::QkBinaryOpType
+    left::Ptr{QkExprNode}
+    right::Ptr{QkExprNode}
+    ty::QkExprTypeInfo
+    constant::Bool
+end
+
+struct QkUnaryExprInfo
+    op::QkUnaryOpType
+    operand::Ptr{QkExprNode}
+    ty::QkExprTypeInfo
+    constant::Bool
+end
+
+struct QkCastExprInfo
+    operand::Ptr{QkExprNode}
+    ty::QkExprTypeInfo
+    implicit::Bool
+    constant::Bool
+end
+
+struct QkIndexExprInfo
+    target::Ptr{QkExprNode}
+    index::Ptr{QkExprNode}
+    ty::QkExprTypeInfo
+    constant::Bool
+end
+
+struct QkDurationValue
+    data::NTuple{8, UInt8}
+end
+
+function Base.getproperty(x::Ptr{QkDurationValue}, f::Symbol)
+    f === :dt && return Ptr{Int64}(x + 0)
+    f === :time && return Ptr{Cdouble}(x + 0)
+    return getfield(x, f)
+end
+
+function Base.getproperty(x::QkDurationValue, f::Symbol)
+    r = Ref{QkDurationValue}(x)
+    ptr = Base.unsafe_convert(Ptr{QkDurationValue}, r)
+    fptr = getproperty(ptr, f)
+    GC.@preserve r unsafe_load(fptr)
+end
+
+function Base.setproperty!(x::Ptr{QkDurationValue}, f::Symbol, v)
+    unsafe_store!(getproperty(x, f), v)
+end
+
+function Base.propertynames(x::QkDurationValue, private::Bool = false)
+    (:dt, :time, if private
+            fieldnames(typeof(x))
+        else
+            ()
+        end...)
+end
+
+struct QkDurationInfo
+    data::NTuple{16, UInt8}
+end
+
+function Base.getproperty(x::Ptr{QkDurationInfo}, f::Symbol)
+    f === :ty && return Ptr{QkDurationType}(x + 0)
+    f === :value && return Ptr{QkDurationValue}(x + 8)
+    return getfield(x, f)
+end
+
+function Base.getproperty(x::QkDurationInfo, f::Symbol)
+    r = Ref{QkDurationInfo}(x)
+    ptr = Base.unsafe_convert(Ptr{QkDurationInfo}, r)
+    fptr = getproperty(ptr, f)
+    GC.@preserve r unsafe_load(fptr)
+end
+
+function Base.setproperty!(x::Ptr{QkDurationInfo}, f::Symbol, v)
+    unsafe_store!(getproperty(x, f), v)
+end
+
+function Base.propertynames(x::QkDurationInfo, private::Bool = false)
+    (:ty, :value, if private
+            fieldnames(typeof(x))
+        else
+            ()
+        end...)
+end
+
+struct QkConditionBitInfo
+    clbit::UInt32
+    condition::Bool
+end
+
+struct QkLoopElements
+    elements::Ptr{Cptrdiff_t}
+    len::Csize_t
+end
+
+struct QkSymbolInfo
+    ty::QkSymbolType
+    name::Ptr{Cchar}
+    index::Csize_t
+end
+
+struct QkSwitchCaseLabels
+    labels::Ptr{UInt64}
+    num_labels::Csize_t
 end
 
 struct QkDagNeighbors
@@ -273,20 +486,60 @@ function qk_quantum_register_free(reg)
     @ccall libqiskit.qk_quantum_register_free(reg::Ptr{QkQuantumRegister})::Cvoid
 end
 
-function qk_classical_register_free(reg)
-    @ccall libqiskit.qk_classical_register_free(reg::Ptr{QkClassicalRegister})::Cvoid
+function qk_quantum_register_name(qreg)
+    @ccall libqiskit.qk_quantum_register_name(qreg::Ptr{QkQuantumRegister})::Ptr{Cchar}
+end
+
+function qk_quantum_register_num_bits(qreg)
+    @ccall libqiskit.qk_quantum_register_num_bits(qreg::Ptr{QkQuantumRegister})::Csize_t
+end
+
+function qk_quantum_register_circuit_bits(qreg, circuit, out_bits)
+    @ccall libqiskit.qk_quantum_register_circuit_bits(qreg::Ptr{QkQuantumRegister}, circuit::Ptr{QkCircuit}, out_bits::Ptr{UInt32})::Cvoid
 end
 
 function qk_classical_register_new(num_clbits, name)
     @ccall libqiskit.qk_classical_register_new(num_clbits::UInt32, name::Ptr{Cchar})::Ptr{QkClassicalRegister}
 end
 
+function qk_classical_register_free(reg)
+    @ccall libqiskit.qk_classical_register_free(reg::Ptr{QkClassicalRegister})::Cvoid
+end
+
+function qk_classical_register_name(creg)
+    @ccall libqiskit.qk_classical_register_name(creg::Ptr{QkClassicalRegister})::Ptr{Cchar}
+end
+
+function qk_classical_register_num_bits(creg)
+    @ccall libqiskit.qk_classical_register_num_bits(creg::Ptr{QkClassicalRegister})::Csize_t
+end
+
+function qk_classical_register_circuit_bits(creg, circuit, out_bits)
+    @ccall libqiskit.qk_classical_register_circuit_bits(creg::Ptr{QkClassicalRegister}, circuit::Ptr{QkCircuit}, out_bits::Ptr{UInt32})::Cvoid
+end
+
 function qk_circuit_add_quantum_register(circuit, reg)
     @ccall libqiskit.qk_circuit_add_quantum_register(circuit::Ptr{QkCircuit}, reg::Ptr{QkQuantumRegister})::Cvoid
 end
 
+function qk_circuit_num_quantum_registers(circuit)
+    @ccall libqiskit.qk_circuit_num_quantum_registers(circuit::Ptr{QkCircuit})::Csize_t
+end
+
+function qk_circuit_get_quantum_register(circuit, qreg_idx)
+    @ccall libqiskit.qk_circuit_get_quantum_register(circuit::Ptr{QkCircuit}, qreg_idx::Csize_t)::Ptr{QkQuantumRegister}
+end
+
 function qk_circuit_add_classical_register(circuit, reg)
     @ccall libqiskit.qk_circuit_add_classical_register(circuit::Ptr{QkCircuit}, reg::Ptr{QkClassicalRegister})::Cvoid
+end
+
+function qk_circuit_num_classical_registers(circuit)
+    @ccall libqiskit.qk_circuit_num_classical_registers(circuit::Ptr{QkCircuit})::Csize_t
+end
+
+function qk_circuit_get_classical_register(circuit, creg_idx)
+    @ccall libqiskit.qk_circuit_get_classical_register(circuit::Ptr{QkCircuit}, creg_idx::Csize_t)::Ptr{QkClassicalRegister}
 end
 
 function qk_circuit_copy(circuit)
@@ -303,6 +556,14 @@ end
 
 function qk_circuit_num_param_symbols(circuit)
     @ccall libqiskit.qk_circuit_num_param_symbols(circuit::Ptr{QkCircuit})::Csize_t
+end
+
+function qk_circuit_global_phase(circuit)
+    @ccall libqiskit.qk_circuit_global_phase(circuit::Ptr{QkCircuit})::Ptr{QkParam}
+end
+
+function qk_circuit_set_global_phase(circuit, phase)
+    @ccall libqiskit.qk_circuit_set_global_phase(circuit::Ptr{QkCircuit}, phase::Ptr{QkParam})::QkExitCode
 end
 
 function qk_circuit_free(circuit)
@@ -401,6 +662,18 @@ function qk_circuit_copy_empty_like(circuit, vars_mode, blocks_mode)
     @ccall libqiskit.qk_circuit_copy_empty_like(circuit::Ptr{QkCircuit}, vars_mode::QkVarsMode, blocks_mode::QkBlocksMode)::Ptr{QkCircuit}
 end
 
+function qk_circuit_estimate_fidelity(circuit, target)
+    @ccall libqiskit.qk_circuit_estimate_fidelity(circuit::Ptr{QkCircuit}, target::Ptr{QkTarget})::Cdouble
+end
+
+function qk_circuit_get_control_flow_instruction(circuit, inst_idx, parent_cf)
+    @ccall libqiskit.qk_circuit_get_control_flow_instruction(circuit::Ptr{QkCircuit}, inst_idx::Csize_t, parent_cf::Ptr{QkControlFlowInstruction})::Ptr{QkControlFlowInstruction}
+end
+
+function qk_control_flow_instruction_free(cf_inst)
+    @ccall libqiskit.qk_control_flow_instruction_free(cf_inst::Ptr{QkControlFlowInstruction})::Cvoid
+end
+
 function qk_circuit_library_iqp(num_qubits, interactions, check_input)
     @ccall libqiskit.qk_circuit_library_iqp(num_qubits::UInt32, interactions::Ptr{Int64}, check_input::Bool)::Ptr{QkCircuit}
 end
@@ -425,6 +698,186 @@ function qk_circuit_library_suzuki_trotter(op, order, reps, time, preserve_order
     @ccall libqiskit.qk_circuit_library_suzuki_trotter(op::Ptr{QkObs}, order::UInt32, reps::UInt32, time::Cdouble, preserve_order::Bool, insert_barriers::Bool)::Ptr{QkCircuit}
 end
 
+function qk_expr_kind(expr)
+    @ccall libqiskit.qk_expr_kind(expr::Ptr{QkExprNode})::QkExprNodeKind
+end
+
+function qk_expr_binary_info(expr)
+    @ccall libqiskit.qk_expr_binary_info(expr::Ptr{QkExprNode})::QkBinaryExprInfo
+end
+
+function qk_expr_unary_info(expr)
+    @ccall libqiskit.qk_expr_unary_info(expr::Ptr{QkExprNode})::QkUnaryExprInfo
+end
+
+function qk_expr_cast_info(expr)
+    @ccall libqiskit.qk_expr_cast_info(expr::Ptr{QkExprNode})::QkCastExprInfo
+end
+
+function qk_expr_index_info(expr)
+    @ccall libqiskit.qk_expr_index_info(expr::Ptr{QkExprNode})::QkIndexExprInfo
+end
+
+function qk_expr_as_value(expr)
+    @ccall libqiskit.qk_expr_as_value(expr::Ptr{QkExprNode})::Ptr{QkValue}
+end
+
+function qk_expr_as_var(expr)
+    @ccall libqiskit.qk_expr_as_var(expr::Ptr{QkExprNode})::Ptr{QkVar}
+end
+
+function qk_expr_as_stretch(expr)
+    @ccall libqiskit.qk_expr_as_stretch(expr::Ptr{QkExprNode})::Ptr{QkStretch}
+end
+
+function qk_value_type_info(value)
+    @ccall libqiskit.qk_value_type_info(value::Ptr{QkValue})::QkExprTypeInfo
+end
+
+function qk_value_duration_info(value)
+    @ccall libqiskit.qk_value_duration_info(value::Ptr{QkValue})::QkDurationInfo
+end
+
+function qk_value_float(value)
+    @ccall libqiskit.qk_value_float(value::Ptr{QkValue})::Cdouble
+end
+
+function qk_value_uint(value)
+    @ccall libqiskit.qk_value_uint(value::Ptr{QkValue})::UInt64
+end
+
+function qk_value_bool(value)
+    @ccall libqiskit.qk_value_bool(value::Ptr{QkValue})::Bool
+end
+
+function qk_var_name(var)
+    @ccall libqiskit.qk_var_name(var::Ptr{QkVar})::Ptr{Cchar}
+end
+
+function qk_var_type_info(var)
+    @ccall libqiskit.qk_var_type_info(var::Ptr{QkVar})::QkExprTypeInfo
+end
+
+function qk_stretch_name(stretch)
+    @ccall libqiskit.qk_stretch_name(stretch::Ptr{QkStretch})::Ptr{Cchar}
+end
+
+function qk_control_flow_kind(cf_inst)
+    @ccall libqiskit.qk_control_flow_kind(cf_inst::Ptr{QkControlFlowInstruction})::QkControlFlowKind
+end
+
+function qk_control_flow_num_blocks(cf_inst)
+    @ccall libqiskit.qk_control_flow_num_blocks(cf_inst::Ptr{QkControlFlowInstruction})::Csize_t
+end
+
+function qk_control_flow_block_circuit(cf_inst, block_idx)
+    @ccall libqiskit.qk_control_flow_block_circuit(cf_inst::Ptr{QkControlFlowInstruction}, block_idx::Csize_t)::Ptr{QkCircuit}
+end
+
+function qk_control_flow_qubit_map(cf_inst)
+    @ccall libqiskit.qk_control_flow_qubit_map(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{UInt32}
+end
+
+function qk_control_flow_clbit_map(cf_inst)
+    @ccall libqiskit.qk_control_flow_clbit_map(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{UInt32}
+end
+
+function qk_control_flow_condition_type(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_type(cf_inst::Ptr{QkControlFlowInstruction})::QkConditionType
+end
+
+function qk_control_flow_condition_bit_info(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_bit_info(cf_inst::Ptr{QkControlFlowInstruction})::QkConditionBitInfo
+end
+
+function qk_control_flow_condition_reg_cond_bit_width(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_reg_cond_bit_width(cf_inst::Ptr{QkControlFlowInstruction})::UInt64
+end
+
+function qk_control_flow_condition_reg(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_reg(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkClassicalRegister}
+end
+
+function qk_control_flow_condition_reg_cond_uint(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_reg_cond_uint(cf_inst::Ptr{QkControlFlowInstruction})::UInt64
+end
+
+function qk_control_flow_condition_expr(cf_inst)
+    @ccall libqiskit.qk_control_flow_condition_expr(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkExprNode}
+end
+
+function qk_control_flow_box_duration_kind(cf_inst)
+    @ccall libqiskit.qk_control_flow_box_duration_kind(cf_inst::Ptr{QkControlFlowInstruction})::QkBoxDurationKind
+end
+
+function qk_control_flow_box_duration_val_info(cf_inst)
+    @ccall libqiskit.qk_control_flow_box_duration_val_info(cf_inst::Ptr{QkControlFlowInstruction})::QkDurationInfo
+end
+
+function qk_control_flow_box_duration_expr(cf_inst)
+    @ccall libqiskit.qk_control_flow_box_duration_expr(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkExprNode}
+end
+
+function qk_control_flow_loop_collection_type(cf_inst)
+    @ccall libqiskit.qk_control_flow_loop_collection_type(cf_inst::Ptr{QkControlFlowInstruction})::QkLoopCollectionType
+end
+
+function qk_control_flow_loop_elements(cf_inst)
+    @ccall libqiskit.qk_control_flow_loop_elements(cf_inst::Ptr{QkControlFlowInstruction})::QkLoopElements
+end
+
+function qk_control_flow_loop_range(cf_inst, out_start, out_stop, out_step)
+    @ccall libqiskit.qk_control_flow_loop_range(cf_inst::Ptr{QkControlFlowInstruction}, out_start::Ptr{Int64}, out_stop::Ptr{Int64}, out_step::Ptr{Int64})::Cvoid
+end
+
+function qk_control_flow_loop_param_kind(cf_inst)
+    @ccall libqiskit.qk_control_flow_loop_param_kind(cf_inst::Ptr{QkControlFlowInstruction})::QkLoopParamKind
+end
+
+function qk_control_flow_loop_symbol_info(cf_inst)
+    @ccall libqiskit.qk_control_flow_loop_symbol_info(cf_inst::Ptr{QkControlFlowInstruction})::QkSymbolInfo
+end
+
+function qk_control_flow_loop_variable(cf_inst)
+    @ccall libqiskit.qk_control_flow_loop_variable(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkVar}
+end
+
+function qk_control_flow_switch_target_type(cf_inst)
+    @ccall libqiskit.qk_control_flow_switch_target_type(cf_inst::Ptr{QkControlFlowInstruction})::QkConditionType
+end
+
+function qk_control_flow_switch_target_bit(cf_inst)
+    @ccall libqiskit.qk_control_flow_switch_target_bit(cf_inst::Ptr{QkControlFlowInstruction})::UInt32
+end
+
+function qk_control_flow_switch_target_register(cf_inst)
+    @ccall libqiskit.qk_control_flow_switch_target_register(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkClassicalRegister}
+end
+
+function qk_control_flow_switch_target_expr(cf_inst)
+    @ccall libqiskit.qk_control_flow_switch_target_expr(cf_inst::Ptr{QkControlFlowInstruction})::Ptr{QkExprNode}
+end
+
+function qk_control_flow_switch_num_cases(cf_inst)
+    @ccall libqiskit.qk_control_flow_switch_num_cases(cf_inst::Ptr{QkControlFlowInstruction})::Csize_t
+end
+
+function qk_control_flow_switch_is_case_default(cf_inst, case_idx)
+    @ccall libqiskit.qk_control_flow_switch_is_case_default(cf_inst::Ptr{QkControlFlowInstruction}, case_idx::Csize_t)::Bool
+end
+
+function qk_control_flow_switch_case_labels_bit_width(cf_inst, case_idx)
+    @ccall libqiskit.qk_control_flow_switch_case_labels_bit_width(cf_inst::Ptr{QkControlFlowInstruction}, case_idx::Csize_t)::UInt64
+end
+
+function qk_control_flow_switch_case_labels_uint(cf_inst, case_idx)
+    @ccall libqiskit.qk_control_flow_switch_case_labels_uint(cf_inst::Ptr{QkControlFlowInstruction}, case_idx::Csize_t)::QkSwitchCaseLabels
+end
+
+function qk_control_flow_switch_case_labels_clear(labels)
+    @ccall libqiskit.qk_control_flow_switch_case_labels_clear(labels::Ptr{QkSwitchCaseLabels})::Cvoid
+end
+
 function qk_dag_new()
     @ccall libqiskit.qk_dag_new()::Ptr{QkDag}
 end
@@ -447,6 +900,14 @@ end
 
 function qk_dag_num_op_nodes(dag)
     @ccall libqiskit.qk_dag_num_op_nodes(dag::Ptr{QkDag})::Csize_t
+end
+
+function qk_dag_global_phase(dag)
+    @ccall libqiskit.qk_dag_global_phase(dag::Ptr{QkDag})::Ptr{QkParam}
+end
+
+function qk_dag_set_global_phase(dag, phase)
+    @ccall libqiskit.qk_dag_set_global_phase(dag::Ptr{QkDag}, phase::Ptr{QkParam})::QkExitCode
 end
 
 function qk_dag_node_type(dag, node)
@@ -897,6 +1358,14 @@ function qk_transpiler_pass_split_2q_unitaries(dag, requested_fidelity, split_sw
     @ccall libqiskit.qk_transpiler_pass_split_2q_unitaries(dag::Ptr{QkDag}, requested_fidelity::Cdouble, split_swaps::Bool)::Ptr{QkTranspileLayout}
 end
 
+function qk_transpiler_pass_standalone_2q_peephole_optimization(circuit, target, approximation_degree)
+    @ccall libqiskit.qk_transpiler_pass_standalone_2q_peephole_optimization(circuit::Ptr{QkCircuit}, target::Ptr{QkTarget}, approximation_degree::Cdouble)::Cvoid
+end
+
+function qk_transpiler_pass_2q_peephole_optimization(dag, target, approximation_degree)
+    @ccall libqiskit.qk_transpiler_pass_2q_peephole_optimization(dag::Ptr{QkDag}, target::Ptr{QkTarget}, approximation_degree::Cdouble)::Cvoid
+end
+
 function qk_transpiler_pass_standalone_unitary_synthesis(circuit, target, min_qubits, approximation_degree)
     @ccall libqiskit.qk_transpiler_pass_standalone_unitary_synthesis(circuit::Ptr{QkCircuit}, target::Ptr{QkTarget}, min_qubits::Csize_t, approximation_degree::Cdouble)::Cvoid
 end
@@ -1181,15 +1650,15 @@ const QISKIT_RELEASE_LEVEL_FINAL = 0x0f
 
 const QISKIT_VERSION_MAJOR = 2
 
-const QISKIT_VERSION_MINOR = 4
+const QISKIT_VERSION_MINOR = 5
 
-const QISKIT_VERSION_PATCH = 1
+const QISKIT_VERSION_PATCH = 2
 
 const QISKIT_RELEASE_LEVEL = QISKIT_RELEASE_LEVEL_FINAL
 
 const QISKIT_RELEASE_SERIAL = 0
 
-const QISKIT_VERSION = "2.4.1"
+const QISKIT_VERSION = "2.5.2"
 
 # exports
 const PREFIXES = ["Qk", "qk_", "QISKIT_"]
