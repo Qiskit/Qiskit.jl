@@ -203,6 +203,17 @@ function Base.show(io::IO, ::MIME"text/plain", obj::Target)
     end
 end
 
+function check_entry_live(entry::TargetEntry)::Nothing
+    if entry.ptr == C_NULL
+        throw(
+            ArgumentError(
+                "This TargetEntry has already been added to a Target and can no longer be used.",
+            ),
+        )
+    end
+    nothing
+end
+
 """
     Qiskit.add_property!(entry::TargetEntry, qubits, duration, error)
 
@@ -221,6 +232,7 @@ function add_property!(
     duration::Real,
     error::Real,
 )::TargetEntry
+    check_entry_live(entry)
     qk_target_entry_add_property(entry, qubits, duration, error)
     return entry
 end
@@ -240,6 +252,7 @@ Qiskit.add_instruction!(target, entry)
 ```
 """
 function add_instruction!(target::Target, entry::TargetEntry)::Target
+    check_entry_live(entry)
     qk_target_add_instruction(target, entry)
     return target
 end

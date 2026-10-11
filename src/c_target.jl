@@ -34,6 +34,7 @@ function qk_target_entry_add_property(
     duration::Real,
     error::Real,
 )::Nothing
+    check_not_null(target_entry)
     qubits0 = Vector{UInt32}(qubits .- 1)
     check_exit_code(
         LibQiskit.qk_target_entry_add_property(

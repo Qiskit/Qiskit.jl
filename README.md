@@ -20,7 +20,6 @@ The following example generates a circuit that constructs a [Bell state](https:/
 
 ```julia
 using Qiskit
-using Qiskit.C # lower-level C API functions
 
 function build_bell()
     qc = QuantumCircuit(2, 2) # 2 qubits, 2 clbits
@@ -35,7 +34,7 @@ function build_chain_target(num_qubits)
     target = Qiskit.Target(num_qubits)
 
     # Add 1q basis gates
-    for gate in (QkGate_X, QkGate_SX, QkGate_RZ)
+    for gate in (Qiskit.QkGate_X, Qiskit.QkGate_SX, Qiskit.QkGate_RZ)
         entry = Qiskit.target_entry_gate(gate)
         for i in 1:num_qubits
             error = 0.8e-6 * i
@@ -46,7 +45,7 @@ function build_chain_target(num_qubits)
     end
 
     # Add 2q basis gate (ECR)
-    ecr_entry = Qiskit.target_entry_gate(QkGate_ECR)
+    ecr_entry = Qiskit.target_entry_gate(Qiskit.QkGate_ECR)
     for i in 1:num_qubits-1
         inst_error = 0.0090393 * (num_qubits - i + 1)
         inst_duration = 0.020039
@@ -87,7 +86,6 @@ idiomatic-Julia style, `Qiskit.Operations` provides the same operations as
 
 ```julia
 using Qiskit
-using Qiskit.C # lower-level C API functions
 using Qiskit.Operations # opt-in: brings h!, cx!, measure!, ... into scope
 
 function build_bell()

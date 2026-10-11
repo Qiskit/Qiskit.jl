@@ -79,4 +79,44 @@
         qk_target_entry_free(duplicate)
         @test duplicate.ptr == C_NULL
     end
+
+    @testset "add_property! and add_instruction!" begin
+        target = Qiskit.Target(2)
+        entry = Qiskit.target_entry_gate(QkGate_X)
+
+        # Each function returns the object it mutates
+        @test Qiskit.add_property!(entry, [1], 1.8e-9, 0.8e-6) === entry
+        @test Qiskit.add_property!(entry, [2], 1.8e-9, 0.8e-6) === entry
+        @test entry.num_properties == 2
+        @test Qiskit.add_instruction!(target, entry) === target
+        @test target.num_instructions == 1
+
+        # The entry is consumed
+        @test entry.ptr == C_NULL
+
+        # Reusing a consumed entry gives a clear error at the porcelain level
+        msg = "This TargetEntry has already been added to a Target and can no longer be used."
+        @test_throws msg Qiskit.add_property!(entry, [1], 0.0, 0.0)
+        @test_throws msg Qiskit.add_instruction!(target, entry)
+        @test target.num_instructions == 1
+
+        # ... and at the C level, rather than aborting the process
+        @test_throws "Ptr{QkTargetEntry} is NULL." qk_target_entry_add_property(
+            entry,
+            [1],
+            0.0,
+            0.0,
+        )
+        @test_throws "Ptr{QkTargetEntry} is NULL." qk_target_add_instruction(target, entry)
+
+        # The chained form works
+        target2 = Qiskit.Target(2)
+        h_entry = Qiskit.target_entry_gate(QkGate_H)
+        @test Qiskit.add_instruction!(
+            target2,
+            Qiskit.add_property!(h_entry, [1], 0.0, 0.0),
+        ) === target2
+        @test h_entry.ptr == C_NULL
+        @test target2.num_instructions == 1
+    end
 end
