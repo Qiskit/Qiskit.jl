@@ -18,7 +18,7 @@ QiskitUnitfulExt = "Unitful"
 [compat]
 Aqua = "0.8.14"
 Compat = "3.47, 4"
-CEnum = "0.5"
+CEnum = "0.5, 1.0"
 Libdl = "1"
 Qiskit_jll = "~2.5"
 Test = "1"
