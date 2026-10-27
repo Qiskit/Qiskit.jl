@@ -1,0 +1,12 @@
+pull_request_rules:
+  - name: backport
+    conditions:
+      - label=stable backport potential
+    actions:
+      backport:
+        branches:
+          - stable/0.6
+merge_queue:
+  # Disallow Mergify from posting an "add this to the queue?" comment.
+  # We don't use the Mergify queue at all, only the GitHub-native one.
+  queue_controls_comment: false
