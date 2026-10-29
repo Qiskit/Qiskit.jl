@@ -27,11 +27,18 @@ end
     QkExitCode_TargetInvalidQargsKey = 0x000000000000012f
     QkExitCode_TargetInvalidInstKey = 0x0000000000000130
     QkExitCode_TranspilerError = 0x0000000000000190
+    QkExitCode_IncompatibleTypes = 0x0000000000000191
+    QkExitCode_CastingError = 0x0000000000000192
     QkExitCode_DagError = 0x00000000000001f4
     QkExitCode_DagComposeMismatch = 0x00000000000001f5
     QkExitCode_DagComposeMissingBit = 0x00000000000001f6
     QkExitCode_ParameterError = 0x0000000000000258
     QkExitCode_ParameterNameConflict = 0x0000000000000259
+    QkExitCode_QpyError = 0x00000000000002bc
+    QkExitCode_CircuitError = 0x0000000000000320
+    QkExitCode_IncorrectDelayUnit = 0x0000000000000321
+    QkExitCode_CustomOperation = 0x0000000000000384
+    QkExitCode_CustomOperationRepeatedSlot = 0x0000000000000385
 end
 
 @cenum QkGate::UInt8 begin
@@ -108,6 +115,9 @@ end
     QkDelayUnit_US = 0x0000000000000002
     QkDelayUnit_NS = 0x0000000000000003
     QkDelayUnit_PS = 0x0000000000000004
+    QkDelayUnit_DT = 0x0000000000000005
+    QkDelayUnit_EXPR = 0x0000000000000006
+    QkDelayUnit_Unknown = 0x0000000000000007
 end
 
 @cenum QkVarsMode::UInt8 begin
@@ -119,6 +129,15 @@ end
 @cenum QkBlocksMode::UInt8 begin
     QkBlocksMode_Drop = 0x0000000000000000
     QkBlocksMode_Keep = 0x0000000000000001
+end
+
+@cenum QkEntanglementStrategy::UInt8 begin
+    QkEntanglementStrategy_Full = 0x0000000000000000
+    QkEntanglementStrategy_Linear = 0x0000000000000001
+    QkEntanglementStrategy_ReverseLinear = 0x0000000000000002
+    QkEntanglementStrategy_Circular = 0x0000000000000003
+    QkEntanglementStrategy_Pairwise = 0x0000000000000004
+    QkEntanglementStrategy_Sca = 0x0000000000000005
 end
 
 @cenum QkExprNodeKind::UInt8 begin
@@ -221,6 +240,13 @@ end
     QkDagNodeType_VarOut = 0x0000000000000006
 end
 
+@cenum QkParamKind::UInt8 begin
+    QkParamKind_Unknown = 0x0000000000000000
+    QkParamKind_Real = 0x0000000000000001
+    QkParamKind_ParameterExpression = 0x0000000000000002
+    QkParamKind_Int = 0x0000000000000003
+end
+
 @cenum QkBitTerm::UInt8 begin
     QkBitTerm_X = 0x0000000000000002
     QkBitTerm_Plus = 0x000000000000000a
@@ -233,17 +259,62 @@ end
     QkBitTerm_One = 0x0000000000000005
 end
 
+@cenum QkCustomOpSlot::UInt32 begin
+    QkCustomOpSlot_Name = 0x0000000000000000
+    QkCustomOpSlot_NumQubits = 0x0000000000000001
+    QkCustomOpSlot_NumClbits = 0x0000000000000002
+    QkCustomOpSlot_NumParams = 0x0000000000000003
+    QkCustomOpSlot_Directive = 0x0000000000000004
+    QkCustomOpSlot_IsUnitary = 0x0000000000000005
+    QkCustomOpSlot_NumCtrlQubits = 0x0000000000000006
+    QkCustomOpSlot_Label = 0x0000000000000007
+    QkCustomOpSlot_Definition = 0x0000000000000008
+    QkCustomOpSlot_Eq = 0x0000000000000009
+    QkCustomOpSlot_Clone = 0x000000000000000a
+    QkCustomOpSlot_Delete = 0x000000000000000b
+end
+
+@cenum QkIrBuiltin::UInt32 begin
+    QkIrBuiltin_Circuit = 0x0000000000000000
+    QkIrBuiltin_Dag = 0x0000000000000001
+end
+
+@cenum QkIrSlot::UInt32 begin
+    QkIrSlot_Delete = 0x0000000000000000
+end
+
+@cenum QkPassSlot::UInt32 begin
+    QkPassSlot_RunOwned = 0x0000000000000000
+    QkPassSlot_Delete = 0x0000000000000001
+end
+
+mutable struct QkCustomOp end
+
 mutable struct QkControlFlowInstruction end
+
+mutable struct QkPass end
 
 mutable struct QkCircuit end
 
 mutable struct QkClassicalRegister end
 
+mutable struct QkCompilationError end
+
+mutable struct QkCustomOpVtable end
+
 mutable struct QkDag end
 
 mutable struct QkExprNode end
 
+mutable struct QkIrHandle end
+
 mutable struct QkParam end
+
+mutable struct QkPassContext end
+
+mutable struct QkPassManager end
+
+mutable struct QkPassVtable end
 
 mutable struct QkQuantumRegister end
 
@@ -287,6 +358,17 @@ struct QkCircuitInstruction
     num_params::UInt32
 end
 
+struct QkCircuitInstructionView
+    name::Ptr{Cchar}
+    qubits::Ptr{UInt32}
+    clbits::Ptr{UInt32}
+    params::Ptr{QkParam}
+    name_len::Csize_t
+    num_qubits::UInt32
+    num_clbits::UInt32
+    num_params::Csize_t
+end
+
 struct QkPauliProductRotation
     z::Ptr{Bool}
     x::Ptr{Bool}
@@ -305,6 +387,15 @@ struct QkCircuitDrawerConfig
     bundle_cregs::Bool
     merge_wires::Bool
     fold::Csize_t
+    barrier_label_len::Csize_t
+end
+
+struct QkNLocalSettings
+    entanglement_strategy::QkEntanglementStrategy
+    reps::Csize_t
+    parameter_prefix::Ptr{Cchar}
+    insert_barriers::Bool
+    skip_final_rotation_layer::Bool
 end
 
 struct QkExprTypeInfo
@@ -423,6 +514,17 @@ end
 struct QkDagNeighbors
     neighbors::Ptr{UInt32}
     num_neighbors::Csize_t
+end
+
+struct QkVtableEntry
+    slot::UInt32
+    flags::UInt32
+    ptr::Ptr{Cvoid}
+end
+
+struct QkQpyLoadedCircuits
+    data::Ptr{Ptr{QkCircuit}}
+    len::Csize_t
 end
 
 struct QkObsTerm
@@ -622,6 +724,10 @@ function qk_circuit_get_instruction(circuit, index, instruction)
     @ccall libqiskit.qk_circuit_get_instruction(circuit::Ptr{QkCircuit}, index::Csize_t, instruction::Ptr{QkCircuitInstruction})::Cvoid
 end
 
+function qk_circuit_view_instruction(circuit, index, out)
+    @ccall libqiskit.qk_circuit_view_instruction(circuit::Ptr{QkCircuit}, index::Csize_t, out::Ptr{QkCircuitInstructionView})::Cvoid
+end
+
 function qk_circuit_pauli_product_rotation(circuit, rotation, qubits)
     @ccall libqiskit.qk_circuit_pauli_product_rotation(circuit::Ptr{QkCircuit}, rotation::Ptr{QkPauliProductRotation}, qubits::Ptr{UInt32})::Cvoid
 end
@@ -650,6 +756,14 @@ function qk_circuit_delay(circuit, qubit, duration, unit)
     @ccall libqiskit.qk_circuit_delay(circuit::Ptr{QkCircuit}, qubit::UInt32, duration::Cdouble, unit::QkDelayUnit)::QkExitCode
 end
 
+function qk_circuit_delay_dt(circuit, qubit, duration)
+    @ccall libqiskit.qk_circuit_delay_dt(circuit::Ptr{QkCircuit}, qubit::UInt32, duration::Int64)::QkExitCode
+end
+
+function qk_circuit_delay_unit(circuit, index)
+    @ccall libqiskit.qk_circuit_delay_unit(circuit::Ptr{QkCircuit}, index::Csize_t)::QkDelayUnit
+end
+
 function qk_circuit_draw(circuit, config)
     @ccall libqiskit.qk_circuit_draw(circuit::Ptr{QkCircuit}, config::Ptr{QkCircuitDrawerConfig})::Ptr{Cchar}
 end
@@ -674,12 +788,24 @@ function qk_control_flow_instruction_free(cf_inst)
     @ccall libqiskit.qk_control_flow_instruction_free(cf_inst::Ptr{QkControlFlowInstruction})::Cvoid
 end
 
+function qk_circuit_custom_operation(circuit, operation, qubits, clbits, params)
+    @ccall libqiskit.qk_circuit_custom_operation(circuit::Ptr{QkCircuit}, operation::Ptr{QkCustomOp}, qubits::Ptr{UInt32}, clbits::Ptr{UInt32}, params::Ptr{Ptr{QkParam}})::QkExitCode
+end
+
 function qk_circuit_library_iqp(num_qubits, interactions, check_input)
     @ccall libqiskit.qk_circuit_library_iqp(num_qubits::UInt32, interactions::Ptr{Int64}, check_input::Bool)::Ptr{QkCircuit}
 end
 
 function qk_circuit_library_random_iqp(num_qubits, seed)
     @ccall libqiskit.qk_circuit_library_random_iqp(num_qubits::UInt32, seed::Int64)::Ptr{QkCircuit}
+end
+
+function qk_circuit_library_n_local(num_qubits, rotation_blocks, rotation_blocks_size, entanglement_blocks, entanglement_blocks_size, settings)
+    @ccall libqiskit.qk_circuit_library_n_local(num_qubits::UInt32, rotation_blocks::Ptr{QkGate}, rotation_blocks_size::Csize_t, entanglement_blocks::Ptr{QkGate}, entanglement_blocks_size::Csize_t, settings::Ptr{QkNLocalSettings})::Ptr{QkCircuit}
+end
+
+function qk_circuit_library_n_local_settings_default()
+    @ccall libqiskit.qk_circuit_library_n_local_settings_default()::QkNLocalSettings
 end
 
 function qk_pauli_product_rotation_clear(inst)
@@ -1002,6 +1128,10 @@ function qk_dag_get_instruction(dag, index, instruction)
     @ccall libqiskit.qk_dag_get_instruction(dag::Ptr{QkDag}, index::UInt32, instruction::Ptr{QkCircuitInstruction})::Cvoid
 end
 
+function qk_dag_view_instruction(dag, index, out)
+    @ccall libqiskit.qk_dag_view_instruction(dag::Ptr{QkDag}, index::UInt32, out::Ptr{QkCircuitInstructionView})::Cvoid
+end
+
 function qk_dag_compose(dag, other, qubits, clbits)
     @ccall libqiskit.qk_dag_compose(dag::Ptr{QkDag}, other::Ptr{QkDag}, qubits::Ptr{UInt32}, clbits::Ptr{UInt32})::QkExitCode
 end
@@ -1032,6 +1162,26 @@ end
 
 function qk_dag_substitute_node_with_unitary(dag, node, matrix, num_qubits)
     @ccall libqiskit.qk_dag_substitute_node_with_unitary(dag::Ptr{QkDag}, node::UInt32, matrix::Ptr{QkComplex64}, num_qubits::UInt32)::Cvoid
+end
+
+function qk_dag_apply_custom_operation(dag, operation, qubits, clbits, params, node, front)
+    @ccall libqiskit.qk_dag_apply_custom_operation(dag::Ptr{QkDag}, operation::Ptr{QkCustomOp}, qubits::Ptr{UInt32}, clbits::Ptr{UInt32}, params::Ptr{Ptr{QkParam}}, node::Ptr{UInt32}, front::Bool)::QkExitCode
+end
+
+function qk_custom_operation_new(operation, v_table)
+    @ccall libqiskit.qk_custom_operation_new(operation::Ptr{Cvoid}, v_table::Ptr{QkCustomOpVtable})::Ptr{QkCustomOp}
+end
+
+function qk_custom_operation_free(data)
+    @ccall libqiskit.qk_custom_operation_free(data::Ptr{QkCustomOp})::Cvoid
+end
+
+function qk_custom_operation_vtable_new(slots)
+    @ccall libqiskit.qk_custom_operation_vtable_new(slots::Ptr{QkVtableEntry})::Ptr{QkCustomOpVtable}
+end
+
+function qk_custom_operation_vtable_free(v_table)
+    @ccall libqiskit.qk_custom_operation_vtable_free(v_table::Ptr{QkCustomOpVtable})::Cvoid
 end
 
 function qk_param_new_symbol(name)
@@ -1138,12 +1288,124 @@ function qk_param_as_real(param)
     @ccall libqiskit.qk_param_as_real(param::Ptr{QkParam})::Cdouble
 end
 
+function qk_param_stride()
+    @ccall libqiskit.qk_param_stride()::Csize_t
+end
+
+function qk_param_as_int(param, value)
+    @ccall libqiskit.qk_param_as_int(param::Ptr{QkParam}, value::Ptr{Int64})::Bool
+end
+
+function qk_param_kind(param)
+    @ccall libqiskit.qk_param_kind(param::Ptr{QkParam})::QkParamKind
+end
+
+function qk_compilation_error_new(msg)
+    @ccall libqiskit.qk_compilation_error_new(msg::Ptr{Cchar})::Ptr{QkCompilationError}
+end
+
+function qk_compilation_error_str(error)
+    @ccall libqiskit.qk_compilation_error_str(error::Ptr{QkCompilationError})::Ptr{Cchar}
+end
+
+function qk_compilation_error_free(error)
+    @ccall libqiskit.qk_compilation_error_free(error::Ptr{QkCompilationError})::Cvoid
+end
+
+function qk_ir_handle_new(name, table)
+    @ccall libqiskit.qk_ir_handle_new(name::Ptr{Cchar}, table::Ptr{QkVtableEntry})::Ptr{QkIrHandle}
+end
+
+function qk_ir_handle_builtin(ty)
+    @ccall libqiskit.qk_ir_handle_builtin(ty::UInt32)::Ptr{QkIrHandle}
+end
+
+function qk_ir_handle_free(handle)
+    @ccall libqiskit.qk_ir_handle_free(handle::Ptr{QkIrHandle})::Cvoid
+end
+
+function qk_pass_vtable_new(name, ir_in, ir_out, table)
+    @ccall libqiskit.qk_pass_vtable_new(name::Ptr{Cchar}, ir_in::Ptr{QkIrHandle}, ir_out::Ptr{QkIrHandle}, table::Ptr{QkVtableEntry})::Ptr{QkPassVtable}
+end
+
+function qk_pass_vtable_free(vtable)
+    @ccall libqiskit.qk_pass_vtable_free(vtable::Ptr{QkPassVtable})::Cvoid
+end
+
+function qk_pass_new(data, vtable)
+    @ccall libqiskit.qk_pass_new(data::Ptr{Cvoid}, vtable::Ptr{QkPassVtable})::Ptr{QkPass}
+end
+
+function qk_pass_free(pass)
+    @ccall libqiskit.qk_pass_free(pass::Ptr{QkPass})::Cvoid
+end
+
+function qk_passmanager_new()
+    @ccall libqiskit.qk_passmanager_new()::Ptr{QkPassManager}
+end
+
+function qk_passmanager_free(pm)
+    @ccall libqiskit.qk_passmanager_free(pm::Ptr{QkPassManager})::Cvoid
+end
+
+function qk_passmanager_push_pass(pm, pass)
+    @ccall libqiskit.qk_passmanager_push_pass(pm::Ptr{QkPassManager}, pass::Ptr{QkPass})::QkExitCode
+end
+
+function qk_passmanager_run_simple(pm, ir, ir_in_handle, ir_out_handle, error)
+    @ccall libqiskit.qk_passmanager_run_simple(pm::Ptr{QkPassManager}, ir::Ptr{Cvoid}, ir_in_handle::Ptr{QkIrHandle}, ir_out_handle::Ptr{QkIrHandle}, error::Ptr{Ptr{QkCompilationError}})::Ptr{Cvoid}
+end
+
+function qk_qpy_read_min_version()
+    @ccall libqiskit.qk_qpy_read_min_version()::UInt8
+end
+
+function qk_qpy_write_min_version()
+    @ccall libqiskit.qk_qpy_write_min_version()::UInt8
+end
+
+function qk_qpy_dump_file(circuits, num_circuits, filename, error)
+    @ccall libqiskit.qk_qpy_dump_file(circuits::Ptr{Ptr{QkCircuit}}, num_circuits::Csize_t, filename::Ptr{Cchar}, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_dump_file_with_version(circuits, num_circuits, filename, version, error)
+    @ccall libqiskit.qk_qpy_dump_file_with_version(circuits::Ptr{Ptr{QkCircuit}}, num_circuits::Csize_t, filename::Ptr{Cchar}, version::UInt8, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_load_file(circuits, filename, error)
+    @ccall libqiskit.qk_qpy_load_file(circuits::Ptr{QkQpyLoadedCircuits}, filename::Ptr{Cchar}, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_dump_buffer(circuits, num_circuits, buffer, size, error)
+    @ccall libqiskit.qk_qpy_dump_buffer(circuits::Ptr{Ptr{QkCircuit}}, num_circuits::Csize_t, buffer::Ptr{Ptr{UInt8}}, size::Ptr{Csize_t}, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_dump_buffer_with_version(circuits, num_circuits, buffer, size, version, error)
+    @ccall libqiskit.qk_qpy_dump_buffer_with_version(circuits::Ptr{Ptr{QkCircuit}}, num_circuits::Csize_t, buffer::Ptr{Ptr{UInt8}}, size::Ptr{Csize_t}, version::UInt8, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_load_buffer(circuits, buffer, size, error)
+    @ccall libqiskit.qk_qpy_load_buffer(circuits::Ptr{QkQpyLoadedCircuits}, buffer::Ptr{UInt8}, size::Csize_t, error::Ptr{Ptr{Cchar}})::QkExitCode
+end
+
+function qk_qpy_loaded_circuits_clear(circuits)
+    @ccall libqiskit.qk_qpy_loaded_circuits_clear(circuits::Ptr{QkQpyLoadedCircuits})::Cvoid
+end
+
+function qk_qpy_free_buffer(buffer, size)
+    @ccall libqiskit.qk_qpy_free_buffer(buffer::Ptr{UInt8}, size::Csize_t)::Cvoid
+end
+
 function qk_obs_zero(num_qubits)
     @ccall libqiskit.qk_obs_zero(num_qubits::UInt32)::Ptr{QkObs}
 end
 
 function qk_obs_identity(num_qubits)
     @ccall libqiskit.qk_obs_identity(num_qubits::UInt32)::Ptr{QkObs}
+end
+
+function qk_obs_with_capacity(num_qubits, num_terms, num_bit_terms)
+    @ccall libqiskit.qk_obs_with_capacity(num_qubits::UInt32, num_terms::Csize_t, num_bit_terms::Csize_t)::Ptr{QkObs}
 end
 
 function qk_obs_new(num_qubits, num_terms, num_bits, coeffs, bit_terms, indices, boundaries)
@@ -1650,15 +1912,15 @@ const QISKIT_RELEASE_LEVEL_FINAL = 0x0f
 
 const QISKIT_VERSION_MAJOR = 2
 
-const QISKIT_VERSION_MINOR = 5
+const QISKIT_VERSION_MINOR = 6
 
-const QISKIT_VERSION_PATCH = 2
+const QISKIT_VERSION_PATCH = 0
 
 const QISKIT_RELEASE_LEVEL = QISKIT_RELEASE_LEVEL_FINAL
 
 const QISKIT_RELEASE_SERIAL = 0
 
-const QISKIT_VERSION = "2.5.2"
+const QISKIT_VERSION = "2.6.0"
 
 # exports
 const PREFIXES = ["Qk", "qk_", "QISKIT_"]
