@@ -124,6 +124,28 @@ function qk_circuit_gate(
     nothing
 end
 
+function qk_circuit_parameterized_gate(
+    qc::Ref{QkCircuit},
+    gate::QkGate,
+    qubits::AbstractVector{<:Integer},
+    params::AbstractVector{Ptr{QkParam}};
+    offset::Int=1,
+)::Nothing
+    check_not_null(qc)
+    if length(qubits) != qk_gate_num_qubits(gate)
+        throw(ArgumentError("Unexpected number of qubits for gate."))
+    end
+    if length(params) != qk_gate_num_params(gate)
+        throw(ArgumentError("Unexpected number of parameters for gate."))
+    end
+    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
+        throw(ArgumentError("Invalid qubit index"))
+    end
+    qubits0 = Vector{UInt32}(qubits .- offset)
+    check_exit_code(LibQiskit.qk_circuit_parameterized_gate(qc, gate, qubits0, params))
+    nothing
+end
+
 function qk_circuit_measure(
     qc::Ref{QkCircuit},
     qubit::Integer,
@@ -238,6 +260,7 @@ export qk_circuit_free,
     qk_circuit_get_instruction,
     qk_circuit_count_ops
 export qk_circuit_gate,
+    qk_circuit_parameterized_gate,
     qk_circuit_measure,
     qk_circuit_reset,
     qk_circuit_barrier,
