@@ -24,6 +24,7 @@ include("c_circuit.jl")
 include("c_target.jl")
 include("c_transpile.jl")
 include("c_observable.jl")
+include("c_dag.jl")
 
 end # module C
 
@@ -33,5 +34,6 @@ include("circuit.jl")
 include("target.jl")
 include("transpile.jl")
 include("observable.jl")
+include("dag.jl")
 
 end # module Qiskit
