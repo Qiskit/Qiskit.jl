@@ -58,32 +58,30 @@ function qk_circuit_num_instructions(qc::Ref{QkCircuit})::Int
     Int(LibQiskit.qk_circuit_num_instructions(qc))
 end
 
-function qk_circuit_get_instruction(
-    qc::Ref{QkCircuit},
-    index::Integer;
-    offset::Int=1,
-)::CircuitInstruction
+function qk_circuit_get_instruction(qc::Ref{QkCircuit}, index::Integer)::CircuitInstruction
     check_not_null(qc)
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_instructions(qc)), index)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_instructions(qc)), index)
         throw(ArgumentError("Invalid instruction index"))
     end
     inst_ref = Ref(LibQiskit.QkCircuitInstruction(C_NULL, C_NULL, C_NULL, C_NULL, 0, 0, 0))
-    index0 = index - offset
+    index0 = index - 1
     LibQiskit.qk_circuit_get_instruction(qc, index0, inst_ref)
     inst = inst_ref[]
     # Everything below reads memory owned by `inst`, which `qk_circuit_instruction_clear`
     # frees at the end of this function.  Each read must therefore materialize its own
-    # copy before then: `map` and the broadcasts below do so eagerly, and `unsafe_string`
-    # copies.  Replacing any of them with something lazy (a `view`, a generator, or a
-    # bare `unsafe_wrap` that escapes) would leave `retval` pointing at freed memory.
+    # copy before then: `map` and the `Vector{Int}` constructors below do so eagerly, and
+    # `unsafe_string` copies.  Replacing any of them with something lazy (a `view`, a
+    # generator, or a bare `unsafe_wrap` that escapes) would leave `retval` pointing at
+    # freed memory.
     param_ptrs = unsafe_wrap(Array, inst.params, inst.num_params)
     params = map(param_ptrs) do p
         LibQiskit.qk_param_as_real(p)
     end
     retval = CircuitInstruction(
         unsafe_string(inst.name),
-        unsafe_wrap(Array, inst.qubits, inst.num_qubits) .+ offset,
-        unsafe_wrap(Array, inst.clbits, inst.num_clbits) .+ offset,
+        # Widening `UInt32`->`Int` and the 0-based to 1-based shift both happen here.
+        Vector{Int}(unsafe_wrap(Array, inst.qubits, inst.num_qubits)) .+ 1,
+        Vector{Int}(unsafe_wrap(Array, inst.clbits, inst.num_clbits)) .+ 1,
         params,
     )
     LibQiskit.qk_circuit_instruction_clear(inst_ref)
@@ -102,8 +100,7 @@ function qk_circuit_gate(
     qc::Ref{QkCircuit},
     gate::QkGate,
     qubits::AbstractVector{<:Integer},
-    params::Union{Nothing,AbstractVector{<:Real}}=nothing;
-    offset::Int=1,
+    params::Union{Nothing,AbstractVector{<:Real}}=nothing,
 )::Nothing
     check_not_null(qc)
     if length(qubits) != qk_gate_num_qubits(gate)
@@ -112,10 +109,10 @@ function qk_circuit_gate(
     if params !== nothing && length(params) != qk_gate_num_params(gate)
         throw(ArgumentError("Unexpected number of parameters for gate."))
     end
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubits)
         throw(ArgumentError("Invalid qubit index"))
     end
-    qubits0 = Vector{UInt32}(qubits .- offset)
+    qubits0 = Vector{UInt32}(qubits .- 1)
     if params === nothing || length(params) == 0
         check_exit_code(LibQiskit.qk_circuit_gate(qc, gate, qubits0, C_NULL))
     else
@@ -124,45 +121,36 @@ function qk_circuit_gate(
     nothing
 end
 
-function qk_circuit_measure(
-    qc::Ref{QkCircuit},
-    qubit::Integer,
-    clbit::Integer;
-    offset::Int=1,
-)::Nothing
+function qk_circuit_measure(qc::Ref{QkCircuit}, qubit::Integer, clbit::Integer)::Nothing
     check_not_null(qc)
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubit)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubit)
         throw(ArgumentError("Invalid qubit index"))
     end
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_clbits(qc)), clbit)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_clbits(qc)), clbit)
         throw(ArgumentError("Invalid clbit index"))
     end
-    qubit0 = qubit - offset
-    clbit0 = clbit - offset
+    qubit0 = qubit - 1
+    clbit0 = clbit - 1
     check_exit_code(LibQiskit.qk_circuit_measure(qc, qubit0, clbit0))
     nothing
 end
 
-function qk_circuit_reset(qc::Ref{QkCircuit}, qubit::Integer; offset::Int=1)::Nothing
+function qk_circuit_reset(qc::Ref{QkCircuit}, qubit::Integer)::Nothing
     check_not_null(qc)
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubit)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubit)
         throw(ArgumentError("Invalid qubit index"))
     end
-    qubit0 = qubit - offset
+    qubit0 = qubit - 1
     check_exit_code(LibQiskit.qk_circuit_reset(qc, qubit0))
     nothing
 end
 
-function qk_circuit_barrier(
-    qc::Ref{QkCircuit},
-    qubits::AbstractVector{<:Integer};
-    offset::Int=1,
-)::Nothing
+function qk_circuit_barrier(qc::Ref{QkCircuit}, qubits::AbstractVector{<:Integer})::Nothing
     check_not_null(qc)
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubits)
         throw(ArgumentError("Invalid qubit index"))
     end
-    qubits0 = Vector{UInt32}(qubits .- offset)
+    qubits0 = Vector{UInt32}(qubits .- 1)
     check_exit_code(LibQiskit.qk_circuit_barrier(qc, qubits0, length(qubits)))
     nothing
 end
@@ -172,13 +160,12 @@ function qk_circuit_unitary(
     matrix::AbstractMatrix{<:Number},
     qubits::AbstractVector{<:Integer};
     check_input::Bool=true,
-    offset::Int=1,
 )::Nothing
     check_not_null(qc)
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubits)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubits)
         throw(ArgumentError("Invalid qubit index"))
     end
-    qubits0 = Vector{UInt32}(qubits .- offset)
+    qubits0 = Vector{UInt32}(qubits .- 1)
     num_qubits = length(qubits)
     if size(matrix) != (2 ^ num_qubits, 2 ^ num_qubits)
         throw(ArgumentError("Matrix must be square and have dimension 2^num_qubits."))
@@ -199,17 +186,16 @@ function qk_circuit_delay(
     qc::Ref{QkCircuit},
     qubit::Integer,
     duration::Real,
-    unit::QkDelayUnit;
-    offset::Int=1,
+    unit::QkDelayUnit,
 )::Nothing
     check_not_null(qc)
     if !(duration >= 0)
         throw(ArgumentError("Duration must be non-negative."))
     end
-    if !checkindex(Bool, range(offset, length=qk_circuit_num_qubits(qc)), qubit)
+    if !checkindex(Bool, Base.OneTo(qk_circuit_num_qubits(qc)), qubit)
         throw(ArgumentError("Invalid qubit index"))
     end
-    qubit0 = qubit - offset
+    qubit0 = qubit - 1
     check_exit_code(LibQiskit.qk_circuit_delay(qc, qubit0, Float64(duration), unit))
     nothing
 end
