@@ -5,6 +5,130 @@ description: Bump Qiskit.jl to a new Qiskit_jll version — regenerate the C bin
 
 # Bumping Qiskit.jl to a new Qiskit version
 
+Start by deciding which track the bump is on. The tracks differ in how
+much risk assessment the bump needs and in how many PRs it takes.
+
+## Step 0: can this release break the C API?
+
+The C API is stable as of Qiskit 2.7. From that point breaking changes are
+confined to major releases. Before 2.7 every minor release could break it,
+and did.
+
+So:
+
+- **Target is 2.6 or earlier** → breaking track.
+- **Target is a new major version** (3.0, 4.0) → breaking track.
+- **Target is 2.7 or a later minor in the same major series** → stable
+  track.
+
+`docs/devguide/deprecation.md`, section "Deprecations in the C API", states
+the policy. Read it at the target tag rather than trusting this paragraph.
+If it still disclaims stability there, take the breaking track whatever the
+version number says.
+
+---
+
+# Stable track
+
+Goal: **one PR** that raises the minimum version and exposes the new
+functionality that minimum makes available.
+
+A stable C API means the new library is a superset of the old one. There is
+no layout change to guard against and no old version to keep working, so
+the staging that the breaking track needs buys nothing.
+
+**Prerequisite: the version must be in Yggdrasil.** `Qiskit_jll` lags
+Qiskit itself, and nothing here can proceed until the JLL builds. See
+"Checking availability".
+
+Then:
+
+1. `gen/Project.toml` — set `[compat] Qiskit_jll = "~X.Y"` for the new
+   floor version.
+2. `cd gen && julia --project=. -e 'using Pkg; Pkg.update()'`.
+3. `cd gen && julia --project=. generator.jl`.
+4. Root `Project.toml` — set `[compat] Qiskit_jll = "X.Y"`, the same
+   version with no tilde. See "The root bound floats".
+5. Expose what the new minimum makes available. See "Scoping the bump".
+6. `julia --project=. -e 'using Pkg; Pkg.test()'` from the root.
+
+Add a release note for the user-visible half of step 5, not for the
+regeneration.
+
+## The root bound floats
+
+On the stable track the root bound is a floor, written as `"X.Y"` rather
+than `"~X.Y"`. Julia reads a bare `"2.7"` as `>=2.7.0, <3.0.0`, so every
+later minor in the series resolves with no change to this repo. Breaking
+changes are confined to majors, and 3.0 is outside the bound.
+
+That is the point of the stable guarantee: users pick up 2.8 and 2.9 on
+their own, and the repo sees no churn to enable it. Do not enumerate minors
+as `"~2.7, ~2.8"` — that is the breaking-track form, and on this track it
+creates work for releases that cannot break anything.
+
+`gen/` keeps the `~` form, naming the same version the root bound floors
+at. The two differ in form, not in version: `gen/generator.jl` reads the
+headers out of whatever `Qiskit_jll` resolves there, so the pin decides
+which version's symbols land in `lib/LibQiskit.jl`.
+
+Generate against the floor, never above it. Bindings generated against the
+floor stay correct on every later minor the root bound admits, since a
+stable API only adds. Pin `gen/` higher and the bindings name symbols the
+floor version lacks; the `Downgrade` job is what catches that.
+
+## Scoping the bump
+
+Expect to reach this skill with the decision already made. Nearly every
+minor release adds C API features, so nearly every one is worth picking up
+eventually. The floating root bound is what makes it unhurried: users
+already resolve the new library, so nothing is broken while the bump waits
+for someone to have time for it.
+
+What the skill is for is the work once the time has come. The scoping
+question is step 5 — what does the new floor let `src/` do that the old one
+did not? `features_c` at the target tag is the list to work from.
+
+Raising the floor is what lets the bindings name the new symbols, and it
+costs downstream users every version below it. Exposing the new
+functionality is what pays for that cost, so a PR that moves the floor
+without using it has nothing to recommend it.
+
+Skipping a version is fine. The floor can jump 2.7 → 2.9 in one PR.
+
+## What still needs checking
+
+Less than the breaking track, but not nothing. Read the notes at every
+release being crossed, not only the target: they are per-release, so a
+2.7 → 2.9 jump hides anything 2.8 said.
+
+- Read `features_c`. On this track it is the list of candidates for step 5
+  rather than a hazard check.
+- Read `deprecations_c`. Deprecations are permitted in minor releases and
+  signal what will break at the next major version. Anything in `src/`
+  calling a newly deprecated function is worth migrating now, while both
+  spellings work.
+- Skim `upgrade_c`. On a stable release this should be empty or
+  clarifying. **An entry that reads as a genuine breaking change means the
+  stability assumption is wrong for that release** — stop and switch to the
+  breaking track.
+- Enum variants returned from C. Additive in principle, but a variant the
+  `@cenum` cannot name is still a latent bug. `QkExitCode` gains variants
+  most releases and is already handled: `check_exit_code` in
+  `src/c_exit_code.jl` falls through to a generic message.
+
+Skip the signature and layout diffing. That work exists to find breaking
+changes, which the upstream guarantee now covers. If the guarantee turns
+out to be wrong, the release notes and a failing test are what catch it.
+
+---
+
+# Breaking track
+
+For a target that may change the C API: anything 2.6 or earlier, any new
+major version, or any release whose notes contradict the stability
+guarantee.
+
 Four edits, in this order.
 
 1. `gen/Project.toml` — set `[compat] Qiskit_jll = "~X.Y"`, naming only
@@ -107,19 +231,31 @@ A narrow bound removes the choice: with no intermediate state that
 supports the old version, the compat bump, the regeneration and the drop
 have to land together.
 
-The `Downgrade` job in `.github/workflows/CI.yml` resolves the lowest
-version the bound allows, so a widened bound is tested against the old
-library rather than merely asserted.
+---
 
-## Notes
+# Checking availability
 
+Both tracks need the JLL published before anything resolves.
+
+- `Qiskit_jll` lags Qiskit itself. A version that is not in the registry
+  needs a Yggdrasil build first. Either bound form picks up later releases
+  within its range with no further change here.
 - Registry metadata can be stale. `~/.julia/registries/General.tar.zst` is
   the current one; a leftover `.tar.gz` may be months old and silently
   missing the version you are looking for. Check mtimes before concluding a
   release is unpublished.
-- `Qiskit_jll` lags Qiskit itself. A version that is not in the registry
-  needs a Yggdrasil build first — `~X.Y` will pick up the patch release
-  later with no further change here.
+
+On the stable track this is a hard gate: the PR raises the minimum, so it
+cannot even be tested until the JLL exists. Confirm availability before
+starting rather than discovering it at step 2.
+
+# Notes
+
+- The `Downgrade` job in `.github/workflows/CI.yml` resolves the lowest
+  version the bound allows, so the floor is tested rather than merely
+  asserted. On the stable track that makes it the job that would catch a
+  binding referring to a symbol the floor version lacks. With a
+  single-version bound it tests the same version as the main matrix.
 - `gen/stub_cxx/` is generator scratch and stays untracked.
 - Commit `gen/Manifest.toml` with the rest; it is tracked. The root
   `Manifest.toml` is not.
