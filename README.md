@@ -104,6 +104,61 @@ returns `nothing`.  These names are not exported from `Qiskit` itself — you op
 in with `using Qiskit.Operations` — because generic verbs such as `measure!` and
 `reset!` should only enter your namespace if you ask for them.
 
+### Pauli-based computation
+
+The [Litinski transformation](https://quantum-journal.org/papers/q-2019-03-05-128/) commutes every Clifford gate to the end of a circuit, leaving a sequence of Pauli-product rotations and measurements.  `litinski_transformation!` runs the pass in place, and `pauli_product_instructions` reads the result back:
+
+```julia
+using Qiskit
+using Qiskit.Operations
+
+# A Clifford + T circuit: the Litinski transformation needs its non-Clifford
+# gates to be T, Tdg, RZ, RX, RY, P, or U1.
+qc = QuantumCircuit(3, 3)
+h!(qc, 1)
+cx!(qc, 1, 2)
+t!(qc, 2)
+rz!(qc, 0.37, 3)
+cx!(qc, 2, 3)
+t!(qc, 1)
+measure!(qc, 1, 1)
+measure!(qc, 2, 2)
+measure!(qc, 3, 3)
+
+litinski_transformation!(qc)
+
+for inst in pauli_product_instructions(qc)
+    if inst isa PauliProductRotation
+        println("rotate ", pauli_label(inst.pauli), " on ", inst.qubits, " by ", inst.angle)
+    else
+        println("measure ", pauli_label(inst.pauli), " on ", inst.qubits)
+    end
+end
+```
+
+```
+rotate X on [1] by 0.7853981633974483
+rotate XZ on [1, 2] by 0.7853981633974483
+rotate Z on [3] by 0.37
+measure X on [1]
+measure XZ on [1, 2]
+measure XZZ on [1, 2, 3]
+```
+
+Each instruction carries a `PauliProduct`, whose `z` and `x` fields use the symplectic encoding and are positional: entry `i` describes the Pauli acting on qubit `qubits[i]`.  A Pauli product lists only the qubits its instruction acts on, so `pauli_label` gives one character per entry of `qubits`.
+
+Because the results are plain Julia values, the parts you want come out as arrays:
+
+```julia
+rotations = filter(i -> i isa PauliProductRotation, pauli_product_instructions(qc))
+@show getproperty.(rotations, :angle)
+# getproperty.(rotations, :angle) = [0.7853981633974483, 0.7853981633974483, 0.37]
+```
+
+`convert_to_pauli_rotations!` converts a circuit to the same Pauli-based form without commuting the Cliffords to the end.  Passing `fix_clifford=true` to `litinski_transformation!` keeps the Clifford gates at the end of the circuit rather than discarding them; `pauli_product_instructions` skips any instruction that is not Pauli-based.
+
+Note that these passes currently abort the process when given an instruction they do not support ([Qiskit/qiskit#17179](https://github.com/Qiskit/qiskit/issues/17179)).
+
 More usage examples can be found in the `test/` directory.
 
 ## Status
@@ -113,6 +168,7 @@ The following features of the Qiskit C API are supported by this wrapper:
 - Construction and manipulation of a `QuantumCircuit`
 - Construction and manipulation of a `Target`
 - Transpilation, given a circuit and target
+- The Litinski transformation and Pauli-based computation instructions
 
 Currently only Linux and macOS are supported, on both x86_64 and aarch64 instruction set architectures.
 
