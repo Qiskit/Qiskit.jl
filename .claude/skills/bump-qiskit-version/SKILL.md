@@ -31,8 +31,7 @@ version number says.
 # Stable track
 
 Goal: **one PR** that raises the minimum version and exposes the new
-functionality that minimum makes available — or, often, no PR at all. See
-"When to bump at all".
+functionality that minimum makes available.
 
 A stable C API means the new library is a superset of the old one. There is
 no layout change to guard against and no old version to keep working, so
@@ -51,7 +50,7 @@ Then:
 3. `cd gen && julia --project=. generator.jl`.
 4. Root `Project.toml` — set `[compat] Qiskit_jll = "X.Y"`, with no tilde.
    See "The root bound floats".
-5. Expose what the new minimum makes available. See "When to bump at all".
+5. Expose what the new minimum makes available. See "Scoping the bump".
 6. `julia --project=. -e 'using Pkg; Pkg.test()'` from the root.
 
 Add a release note for the user-visible half of step 5, not for the
@@ -74,35 +73,41 @@ snapshot of one library version, and generating them against whatever `Pkg`
 happens to resolve would make the checked-in `lib/LibQiskit.jl`
 irreproducible.
 
-## When to bump at all
+## Scoping the bump
 
-Most minor releases need no work here. With the root bound floating, a new
-minor is already supported the moment its JLL is published, and bindings
-generated against the older library stay correct because a stable API only
-adds.
+Expect to reach this skill with the decision already made. Nearly every
+minor release adds C API features, so nearly every one is worth picking up
+eventually. The floating root bound is what makes it unhurried: users
+already resolve the new library, so nothing is broken while the bump waits
+for someone to have time for it.
 
-So the question that justifies a PR is step 5: what does 2.8 let us do that
-2.7 did not? `features_c` in the release notes is where the answer lives.
+What the skill is for is the work once the time has come. The scoping
+question is step 5 — what does the new floor let `src/` do that the old one
+did not? `features_c` at the target tag is the list to work from.
 
-- **Nothing worth exposing** → no PR. Users get the new version anyway.
-- **Something worth exposing** → one PR. Raising the floor to `"2.8"` is
-  what lets the bindings name 2.8 symbols, and it costs downstream users
-  the older versions, so the new functionality is what pays for it.
+Raising the floor is what lets the bindings name the new symbols, and it
+costs downstream users every version below it. Exposing the new
+functionality is what pays for that cost, so a PR that moves the floor
+without using it has nothing to recommend it.
+
+Skipping a version is fine. The floor can jump 2.7 → 2.9 in one PR.
 
 ## What still needs checking
 
-Less than the breaking track, but not nothing.
+Less than the breaking track, but not nothing. Read the notes at every
+release being crossed, not only the target: they are per-release, so a
+2.7 → 2.9 jump hides anything 2.8 said.
 
-- Read `features_c` at the target tag. On this track it is the list of
-  candidates for step 5 rather than a hazard check.
+- Read `features_c`. On this track it is the list of candidates for step 5
+  rather than a hazard check.
 - Read `deprecations_c`. Deprecations are permitted in minor releases and
   signal what will break at the next major version. Anything in `src/`
   calling a newly deprecated function is worth migrating now, while both
   spellings work.
 - Skim `upgrade_c`. On a stable release this should be empty or
-  clarifying. **An entry here that reads as a genuine breaking change means
-  the stability assumption is wrong for this release** — stop and switch to
-  the breaking track.
+  clarifying. **An entry that reads as a genuine breaking change means the
+  stability assumption is wrong for that release** — stop and switch to the
+  breaking track.
 - Enum variants returned from C. Additive in principle, but a variant the
   `@cenum` cannot name is still a latent bug. `QkExitCode` gains variants
   most releases and is already handled: `check_exit_code` in
