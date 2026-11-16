@@ -321,6 +321,72 @@ function pauli_product_instructions(
     return retval
 end
 
+# The instruction names the Litinski transformation accepts, mirroring
+# `SUPPORTED_INSTRUCTION_NAMES` in the Rust pass.  The pass reports unsupported
+# instructions by panicking, which aborts the process rather than raising
+# something catchable (Qiskit/qiskit#17179), so the names are duplicated here to
+# check a circuit before handing it over.
+#
+# This whole guard exists only because of that upstream behavior and should be
+# removed once the pass returns an error instead: there would then be nothing to
+# duplicate, since the circuit could simply be handed over and the error
+# surfaced.
+#
+# Drift against the pass's own list is handled asymmetrically, because only one
+# direction is dangerous.  If the pass stops supporting a name listed here, a
+# circuit using it reaches the pass and aborts; a test builds a circuit for each
+# name so that failure happens in CI rather than in a user's session.  If the
+# pass *gains* support for a name missing here, this guard rejects a circuit the
+# pass would have accepted, which is merely a wrong error message and is left
+# uncovered: detecting it would mean running the pass on instructions it may
+# still reject, which aborts the test process instead of failing it.
+const LITINSKI_SUPPORTED_OPERATIONS = Set([
+    "id",
+    "x",
+    "y",
+    "z",
+    "h",
+    "s",
+    "sdg",
+    "sx",
+    "sxdg",
+    "cx",
+    "cz",
+    "cy",
+    "swap",
+    "iswap",
+    "ecr",
+    "dcx",
+    "t",
+    "tdg",
+    "rz",
+    "rx",
+    "ry",
+    "p",
+    "u1",
+    "measure",
+    "pauli_product_rotation",
+    "pauli_product_measurement",
+])
+
+function check_litinski_supported(qc::QuantumCircuit)::Nothing
+    unsupported = [
+        name for
+        (name, _) in qk_circuit_count_ops(qc) if name ∉ LITINSKI_SUPPORTED_OPERATIONS
+    ]
+    if !isempty(unsupported)
+        throw(
+            ArgumentError(
+                "Unable to run the Litinski transformation: the circuit contains " *
+                "instructions the pass does not support: " *
+                join(sort(unsupported), ", ") *
+                ".  Transpile into a Clifford + RZ basis first.",
+            ),
+        )
+    end
+    nothing
+end
+
 """
     litinski_transformation!(qc::QuantumCircuit; fix_clifford::Bool=false)
 
@@ -334,12 +400,17 @@ Clifford gates are left at the end of the circuit; otherwise they are omitted.
 The non-Clifford gates must be drawn from `T`, `Tdg`, `RZ`, `RX`, `RY`, `P`,
 and `U1`; the suggested workflow is to transpile into a Clifford + `RZ` basis
 first.  Read the result back with `pauli_product_instructions`.
+
+Throws an `ArgumentError` if `qc` contains an instruction the pass does not
+support, which it would otherwise report by aborting the process
+([Qiskit/qiskit#17179](https://github.com/Qiskit/qiskit/issues/17179)).
 """
 function litinski_transformation!(
     qc::QuantumCircuit;
     fix_clifford::Bool=false,
 )::QuantumCircuit
     check_not_null(qc.ptr)
+    check_litinski_supported(qc)
     LibQiskit.qk_transpiler_pass_standalone_litinski_transformation(qc.ptr, fix_clifford)
     return qc
 end

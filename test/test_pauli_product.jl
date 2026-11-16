@@ -142,3 +142,138 @@ end
           "PauliProductMeasurement(\"XZZ\", [1, 2, 3], clbit=3)"
     @test sprint(show, PauliProduct(Bool[1], Bool[1], [2])) == "PauliProduct(\"Y\", [2])"
 end
+
+@testset "unsupported instructions are rejected rather than aborting" begin
+    # Without this guard the pass aborts the whole process
+    # (https://github.com/Qiskit/qiskit/issues/17179), so these must throw.
+    for (name, build!) in (
+        ("u", qc -> u!(qc, 0.1, 0.2, 0.3, 2)),
+        ("ccx", qc -> ccx!(qc, 1, 2, 3)),
+        ("barrier", qc -> barrier!(qc)),
+        ("reset", qc -> reset!(qc, 2)),
+        ("delay", qc -> delay!(qc, 2, 100.0, QkDelayUnit_NS)),
+    )
+        qc = QuantumCircuit(3, 1)
+        t!(qc, 1)  # a handled gate, so the pass would not skip the circuit
+        build!(qc)
+        @test_throws ArgumentError litinski_transformation!(qc)
+        # The circuit is left untouched when the guard rejects it.
+        @test any(op -> first(op) == name, qk_circuit_count_ops(qc))
+    end
+end
+
+@testset "supported instruction list matches the pass" begin
+    # The guard duplicates the pass's own list of supported instructions, so
+    # check that every name in it is genuinely accepted.  If the pass drops
+    # support for one of them, this aborts the test process rather than letting
+    # the guard wave through a circuit that would abort in a user's session.
+    #
+    # The reverse direction -- the pass gaining support for an instruction the
+    # guard still rejects -- is deliberately not covered here; see the comment
+    # on `LITINSKI_SUPPORTED_OPERATIONS`.
+    builders = Dict(
+        "id" => qc -> id!(qc, 1),
+        "x" => qc -> x!(qc, 1),
+        "y" => qc -> y!(qc, 1),
+        "z" => qc -> z!(qc, 1),
+        "h" => qc -> h!(qc, 1),
+        "s" => qc -> s!(qc, 1),
+        "sdg" => qc -> sdg!(qc, 1),
+        "sx" => qc -> sx!(qc, 1),
+        "sxdg" => qc -> sxdg!(qc, 1),
+        "cx" => qc -> cx!(qc, 1, 2),
+        "cz" => qc -> cz!(qc, 1, 2),
+        "cy" => qc -> cy!(qc, 1, 2),
+        "swap" => qc -> swap!(qc, 1, 2),
+        "iswap" => qc -> iswap!(qc, 1, 2),
+        "ecr" => qc -> ecr!(qc, 1, 2),
+        "dcx" => qc -> dcx!(qc, 1, 2),
+        "t" => qc -> t!(qc, 1),
+        "tdg" => qc -> tdg!(qc, 1),
+        "rz" => qc -> rz!(qc, 0.3, 1),
+        "rx" => qc -> rx!(qc, 0.3, 1),
+        "ry" => qc -> ry!(qc, 0.3, 1),
+        "p" => qc -> p!(qc, 0.3, 1),
+        "measure" => qc -> measure!(qc, 1, 1),
+    )
+    # Every supported name is either covered by a builder above or is produced
+    # by the pass itself (`u1` has no `!` function; the Pauli-based kinds are
+    # exercised by the round-trip test below).
+    uncovered = setdiff(
+        Qiskit.LITINSKI_SUPPORTED_OPERATIONS,
+        union(
+            keys(builders),
+            ["u1", "pauli_product_rotation", "pauli_product_measurement"],
+        ),
+    )
+    @test isempty(uncovered)
+
+    for (name, build!) in builders
+        qc = QuantumCircuit(2, 1)
+        t!(qc, 1)  # ensure the pass does not skip the circuit
+        build!(qc)
+        # Must not throw, and must not abort: reaching the next line is the test.
+        @test litinski_transformation!(qc) === qc
+    end
+
+    # A circuit already in Pauli-based form is still accepted, which covers the
+    # two `pauli_product_*` names.
+    qc = QuantumCircuit(2, 1)
+    t!(qc, 1)
+    measure!(qc, 1, 1)
+    litinski_transformation!(qc)
+    @test !isempty(pauli_product_instructions(qc))
+    @test litinski_transformation!(qc) === qc
+end
+
+# Runs `body` in a fresh Julia process that calls the C pass directly, bypassing
+# the guard, and reports how the process ended.  `survived` distinguishes a
+# clean run from one killed by the panic, so a test cannot pass merely because
+# the subprocess failed to start.
+function probe_unguarded_litinski(body::AbstractString)
+    project = dirname(Base.active_project())
+    code = """
+    using Qiskit
+    using Qiskit.Operations
+    using Qiskit: LibQiskit
+    qc = QuantumCircuit(3, 1)
+    $body
+    LibQiskit.qk_transpiler_pass_standalone_litinski_transformation(
+        getfield(qc, :ptr),
+        false,
+    )
+    println("SURVIVED")
+    """
+    cmd = `$(Base.julia_cmd()) --startup-file=no --project=$project -e $code`
+    output = Pipe()
+    process = run(pipeline(cmd; stdout=output, stderr=devnull); wait=false)
+    close(output.in)
+    printed = read(output, String)
+    wait(process)
+    return (
+        survived=occursin("SURVIVED", printed),
+        termsignal=process.termsignal,
+        exitcode=process.exitcode,
+    )
+end
+
+@testset "guard is still needed" begin
+    # This asserts the upstream behavior the guard exists to work around
+    # (https://github.com/Qiskit/qiskit/issues/17179): calling the pass directly
+    # with an unsupported instruction kills the process.
+    #
+    # It is expected to FAIL once that issue is fixed, and that failure is the
+    # intended signal that this guard, its duplicated instruction list, and this
+    # test can all be deleted.
+    unsupported = probe_unguarded_litinski("t!(qc, 1)\n    u!(qc, 0.1, 0.2, 0.3, 2)")
+    @test !unsupported.survived
+    @test unsupported.termsignal != 0
+
+    # Control: the same call path with only supported instructions runs to
+    # completion, so the assertions above are about the unsupported instruction
+    # rather than a subprocess that could not start.
+    supported = probe_unguarded_litinski("t!(qc, 1)\n    h!(qc, 2)")
+    @test supported.survived
+    @test supported.termsignal == 0
+    @test supported.exitcode == 0
+end
