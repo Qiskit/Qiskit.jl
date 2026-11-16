@@ -56,29 +56,37 @@
     @test qc_copy.num_qubits == qc.num_qubits
     @test qc_copy.num_clbits == qc.num_clbits
     @test qc_copy.num_instructions == qc.num_instructions
-    @testset "Zero-based indexing" begin
-        qc = QuantumCircuit(4, 1, offset=0)
-        @test qc.num_qubits == 4
-        qc.rz(0.25, 0)
-        qc.cx(0, 3)
-        qc.delay(1, 4.0, QkDelayUnit_S)
-        qc.unitary([0 -im; im 0], [0])
-        qc.barrier(0, 1, 2, 3)
-        qc.measure(3, 0)
-        qc.reset(0)
-        @test_throws ArgumentError qc.h(4)
-        @test_throws ArgumentError qk_circuit_unitary(qc, [0 1; 1 0], [4])
-        @test_throws ArgumentError qk_circuit_barrier(qc, [1, 2, 3, 4])
-        @test_throws ArgumentError qk_circuit_measure(qc, 4, 0)
-        @test_throws ArgumentError qk_circuit_measure(qc, 3, 1)
-        @test_throws ArgumentError qk_circuit_reset(qc, 4)
-        instructions = [instruction.name for instruction in qc.data]
-        @test instructions ==
-              ["rz", "cx", "delay", "unitary", "barrier", "measure", "reset"]
-        @test qk_circuit_get_instruction(qc, 0).params == [0.25]
-        @test qk_circuit_get_instruction(qc, 1).qubits == [0, 3]
-        @test qk_circuit_get_instruction(qc, 2).params == [4.0]
-        @test qk_circuit_get_instruction(qc, 5).clbits == [0]
+
+    @testset "Qubit and clbit index bounds" begin
+        qc = QuantumCircuit(4, 1)
+        @test_throws ArgumentError qc.h(0)
+        @test_throws ArgumentError qc.h(5)
+        @test_throws ArgumentError qk_circuit_unitary(qc, [0 1; 1 0], [5])
+        @test_throws ArgumentError qk_circuit_barrier(qc, [2, 3, 4, 5])
+        @test_throws ArgumentError qk_circuit_measure(qc, 5, 1)
+        @test_throws ArgumentError qk_circuit_measure(qc, 4, 2)
+        @test_throws ArgumentError qk_circuit_reset(qc, 5)
+        @test_throws ArgumentError qk_circuit_get_instruction(qc, 0)
+    end
+
+    @testset "data is a 1-based AbstractVector" begin
+        qc = QuantumCircuit(2, 1)
+        qc.h(1)
+        qc.cx(1, 2)
+        qc.measure(2, 1)
+        data = qc.data
+        @test firstindex(data) == 1
+        @test lastindex(data) == 3
+        @test eachindex(data) == 1:3
+        @test axes(data) == (Base.OneTo(3),)
+        # Iteration, `collect` and indexing must agree; they take different
+        # paths through the `AbstractArray` interface.
+        @test [inst.name for inst in data] == ["h", "cx", "measure"]
+        @test [inst.name for inst in collect(data)] == ["h", "cx", "measure"]
+        @test [data[i].name for i in eachindex(data)] == ["h", "cx", "measure"]
+        @test data[1].qubits == [1]
+        @test data[2].qubits == [1, 2]
+        @test data[3].clbits == [1]
     end
 
     @testset "Base.show" begin
@@ -104,10 +112,10 @@
         @test contains(output, "instructions: 1")
 
         # NULL path (after explicit free)
-        qc_zero = QuantumCircuit(3, 0, offset=0)
-        qk_circuit_free(qc_zero)
+        qc_freed = QuantumCircuit(3, 0)
+        qk_circuit_free(qc_freed)
         io = IOBuffer()
-        show(io, qc_zero)
+        show(io, qc_freed)
         @test String(take!(io)) == "QuantumCircuit(NULL)"
     end
 

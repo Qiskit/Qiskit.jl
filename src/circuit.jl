@@ -64,18 +64,17 @@ return the circuit, see [`Qiskit.Operations`](@ref).
 """
 mutable struct QuantumCircuit
     ptr::Ptr{QkCircuit}
-    offset::Int
-    function QuantumCircuit(num_qubits::Integer=0, num_clbits::Integer=0; offset::Int=1)
+    function QuantumCircuit(num_qubits::Integer=0, num_clbits::Integer=0)
         num_qubits >= 0 || throw(ArgumentError("Number of qubits must be non-negative."))
         num_clbits >= 0 || throw(ArgumentError("Number of clbits must be non-negative."))
-        qc = new(LibQiskit.qk_circuit_new(num_qubits, num_clbits), offset)
+        qc = new(LibQiskit.qk_circuit_new(num_qubits, num_clbits))
         # Take ownership; it's our job to free it eventually
         finalizer(qk_circuit_free, qc)
         qc
     end
-    function QuantumCircuit(ptr::Ptr{QkCircuit}; offset::Int=1)
+    function QuantumCircuit(ptr::Ptr{QkCircuit})
         check_not_null(ptr)
-        qc = new(ptr, offset)
+        qc = new(ptr)
         # Take ownership; it's our job to free it eventually
         finalizer(qk_circuit_free, qc)
         qc
@@ -93,7 +92,7 @@ end
 function Base.copy(qc::QuantumCircuit)::QuantumCircuit
     check_not_null(qc.ptr)
     ptr = LibQiskit.qk_circuit_copy(qc.ptr)
-    QuantumCircuit(ptr; offset=qc.offset)
+    QuantumCircuit(ptr)
 end
 
 qk_circuit_num_qubits(qc::QuantumCircuit)::Int = qk_circuit_num_qubits(qc.ptr)
@@ -103,7 +102,7 @@ qk_circuit_num_clbits(qc::QuantumCircuit)::Int = qk_circuit_num_clbits(qc.ptr)
 qk_circuit_num_instructions(qc::QuantumCircuit)::Int = qk_circuit_num_instructions(qc.ptr)
 
 qk_circuit_get_instruction(qc::QuantumCircuit, index::Integer)::CircuitInstruction =
-    qk_circuit_get_instruction(qc.ptr, index; offset=qc.offset)
+    qk_circuit_get_instruction(qc.ptr, index)
 
 struct GateClosure{GATE}
     qc::QuantumCircuit
@@ -251,7 +250,7 @@ returns `qc`. Same effect as `qc.barrier(qubits...)`.
 """
 function barrier!(qc::QuantumCircuit, qubits::Integer...)::QuantumCircuit
     if isempty(qubits)
-        qubits_vector = collect(Int32, qc.offset:(qc.num_qubits+qc.offset-1))
+        qubits_vector = collect(Int32, 1:qc.num_qubits)
     else
         qubits_vector = collect(Int32, qubits)
     end
@@ -389,31 +388,10 @@ end
 
 Base.IndexStyle(::Type{QuantumCircuitData}) = IndexLinear()
 Base.size(qcdata::QuantumCircuitData) = (qcdata.circuit.num_instructions,)
-Base.firstindex(qcdata::QuantumCircuitData) = qcdata.circuit.offset
-Base.lastindex(qcdata::QuantumCircuitData) =
-    firstindex(qcdata) + qcdata.circuit.num_instructions - 1
 
 function Base.getindex(qcdata::QuantumCircuitData, i::Integer)
-    @boundscheck checkbounds(qcdata, i - qcdata.circuit.offset + 1)
+    @boundscheck checkbounds(qcdata, i)
     qk_circuit_get_instruction(qcdata.circuit, i)
-end
-
-function Base.iterate(qcdata::QuantumCircuitData)
-    if isempty(qcdata)
-        return nothing
-    else
-        i = firstindex(qcdata)
-        return (qcdata[i], i + 1)
-    end
-end
-
-function Base.iterate(qcdata::QuantumCircuitData, state)
-    qc = qcdata.circuit
-    if state >= qc.num_instructions + qc.offset
-        return nothing
-    else
-        return (qcdata[state], state + 1)
-    end
 end
 
 # Non-gate properties and pseudo-method accessors, kept as an explicit tuple so
@@ -484,23 +462,20 @@ function Base.getproperty(qc::QuantumCircuit, sym::Symbol)
     end
 end
 
-qk_circuit_gate(qc::QuantumCircuit, args...)::Nothing =
-    qk_circuit_gate(qc.ptr, args...; offset=qc.offset)
+qk_circuit_gate(qc::QuantumCircuit, args...)::Nothing = qk_circuit_gate(qc.ptr, args...)
 
 qk_circuit_measure(qc::QuantumCircuit, qubit::Integer, clbit::Integer)::Nothing =
-    qk_circuit_measure(qc.ptr, qubit, clbit; offset=qc.offset)
+    qk_circuit_measure(qc.ptr, qubit, clbit)
 
 qk_circuit_reset(qc::QuantumCircuit, qubit::Integer)::Nothing =
-    qk_circuit_reset(qc.ptr, qubit; offset=qc.offset)
+    qk_circuit_reset(qc.ptr, qubit)
 
-qk_circuit_barrier(qc::QuantumCircuit, qubits)::Nothing =
-    qk_circuit_barrier(qc.ptr, qubits; offset=qc.offset)
+qk_circuit_barrier(qc::QuantumCircuit, qubits)::Nothing = qk_circuit_barrier(qc.ptr, qubits)
 
 qk_circuit_unitary(qc::QuantumCircuit, matrix, qubits; check_input::Bool=true)::Nothing =
-    qk_circuit_unitary(qc.ptr, matrix, qubits; check_input, offset=qc.offset)
+    qk_circuit_unitary(qc.ptr, matrix, qubits; check_input)
 
-qk_circuit_delay(qc::QuantumCircuit, args...) =
-    qk_circuit_delay(qc.ptr, args...; offset=qc.offset)
+qk_circuit_delay(qc::QuantumCircuit, args...) = qk_circuit_delay(qc.ptr, args...)
 
 qk_circuit_count_ops(qc::QuantumCircuit) = qk_circuit_count_ops(qc.ptr)
 
