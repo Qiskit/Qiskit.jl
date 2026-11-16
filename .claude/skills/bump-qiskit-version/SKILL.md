@@ -43,13 +43,12 @@ Qiskit itself, and nothing here can proceed until the JLL builds. See
 
 Then:
 
-1. `gen/Project.toml` — set `[compat] Qiskit_jll = "~X.Y"`, naming only the
-   new version. This one stays pinned to a single minor: the generator must
-   resolve the exact library the bindings will mirror.
+1. `gen/Project.toml` — set `[compat] Qiskit_jll = "~X.Y"` for the new
+   floor version.
 2. `cd gen && julia --project=. -e 'using Pkg; Pkg.update()'`.
 3. `cd gen && julia --project=. generator.jl`.
-4. Root `Project.toml` — set `[compat] Qiskit_jll = "X.Y"`, with no tilde.
-   See "The root bound floats".
+4. Root `Project.toml` — set `[compat] Qiskit_jll = "X.Y"`, the same
+   version with no tilde. See "The root bound floats".
 5. Expose what the new minimum makes available. See "Scoping the bump".
 6. `julia --project=. -e 'using Pkg; Pkg.test()'` from the root.
 
@@ -68,10 +67,15 @@ their own, and the repo sees no churn to enable it. Do not enumerate minors
 as `"~2.7, ~2.8"` — that is the breaking-track form, and on this track it
 creates work for releases that cannot break anything.
 
-`gen/` is the exception. It keeps the `~` pin because the bindings are a
-snapshot of one library version, and generating them against whatever `Pkg`
-happens to resolve would make the checked-in `lib/LibQiskit.jl`
-irreproducible.
+`gen/` keeps the `~` form, naming the same version the root bound floors
+at. The two differ in form, not in version: `gen/generator.jl` reads the
+headers out of whatever `Qiskit_jll` resolves there, so the pin decides
+which version's symbols land in `lib/LibQiskit.jl`.
+
+Generate against the floor, never above it. Bindings generated against the
+floor stay correct on every later minor the root bound admits, since a
+stable API only adds. Pin `gen/` higher and the bindings name symbols the
+floor version lacks; the `Downgrade` job is what catches that.
 
 ## Scoping the bump
 
