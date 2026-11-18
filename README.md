@@ -18,7 +18,9 @@ Supported operating systems: macOS and Linux.
 
 - [Qiskit beyond Python: Fortran, C++, and Julia](https://www.ibm.com/quantum/blog/qiskit-beyond-python) introduces this package alongside the Fortran and C++ bindings, all of which share the Qiskit C API and its Rust core.
 - [Simulate time evolution of the transverse-field Ising model](https://quantum.cloud.ibm.com/docs/tutorials/time-evolution) is the first Julia tutorial on the IBM Quantum Platform.  It builds Trotterized circuits, runs them on hardware, and compares against classical references, entirely in Julia.
+- [Learn noisy quantum states with classical shadows](https://quantum.cloud.ibm.com/docs/tutorials/classical-shadows) is a second Julia tutorial.  It uses randomized measurements on a 96-qubit chain to fit a matrix product operator model of the state the hardware prepared, then estimates its fidelity and entropy.
 - [QiskitOpt.jl](https://github.com/JuliaQUBO/QiskitOpt.jl), the [JuliaQUBO](https://github.com/JuliaQUBO) ecosystem's JuMP interface to Qiskit optimization algorithms, now builds on Qiskit.jl and QiskitIBMRuntime.jl instead of calling Python.  See its [v0.8.0 release notes](https://github.com/JuliaQUBO/QiskitOpt.jl/releases/tag/v0.8.0) ([announcement](https://www.linkedin.com/posts/bernalde_julialang-qiskit-quantumcomputing-share-7520311774940774400-Kjqj/)).
+- [TensorNetworkQuantumSimulator.jl](https://github.com/JoeyT1994/TensorNetworkQuantumSimulator.jl), which simulates circuits using tensor networks of near-arbitrary geometry, can now import a Qiskit.jl `QuantumCircuit` directly.  See [Circuits from Qiskit](https://JoeyT1994.github.io/TensorNetworkQuantumSimulator.jl/stable/qiskit/).
 
 ## Example
 
