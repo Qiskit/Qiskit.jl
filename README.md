@@ -14,19 +14,26 @@ If Julia is already installed, then this package can be installed in one step, b
 
 Supported operating systems: macOS and Linux.
 
+## Recent news
+
+- [Qiskit beyond Python: Fortran, C++, and Julia](https://www.ibm.com/quantum/blog/qiskit-beyond-python) introduces this package alongside the Fortran and C++ bindings, all of which share the Qiskit C API and its Rust core.
+- [Simulate time evolution of the transverse-field Ising model](https://quantum.cloud.ibm.com/docs/tutorials/time-evolution) is the first Julia tutorial on the IBM Quantum Platform.  It builds Trotterized circuits, runs them on hardware, and compares against classical references, entirely in Julia.
+- [QiskitOpt.jl](https://github.com/JuliaQUBO/QiskitOpt.jl), the [JuliaQUBO](https://github.com/JuliaQUBO) ecosystem's JuMP interface to Qiskit optimization algorithms, now builds on Qiskit.jl and QiskitIBMRuntime.jl instead of calling Python.  See its [v0.8.0 release notes](https://github.com/JuliaQUBO/QiskitOpt.jl/releases/tag/v0.8.0) ([announcement](https://www.linkedin.com/posts/bernalde_julialang-qiskit-quantumcomputing-share-7520311774940774400-Kjqj/)).
+
 ## Example
 
 The following example generates a circuit that constructs a [Bell state](https://en.wikipedia.org/wiki/Bell_state), specifies a synthetic hardware device, and transpiles the circuit to run on that hardware device.  To transpile to and run on an actual hardware backend, see the [more succinct example](https://github.com/Qiskit/QiskitIBMRuntime.jl?tab=readme-ov-file#example) in the [QiskitIBMRuntime.jl](https://github.com/Qiskit/QiskitIBMRuntime.jl) README.
 
 ```julia
 using Qiskit
+using Qiskit.Operations
 
 function build_bell()
     qc = QuantumCircuit(2, 2) # 2 qubits, 2 clbits
-    qc.h(1)
-    qc.cx(1, 2)
-    qc.measure(1, 1)
-    qc.measure(2, 2)
+    h!(qc, 1)
+    cx!(qc, 1, 2)
+    measure!(qc, 1, 1)
+    measure!(qc, 2, 2)
     qc
 end
 
@@ -74,35 +81,23 @@ result = transpile(qc, target)
 @show result.circuit.num_instructions
 ```
 
-The `QuantumCircuit` type provides a similar interface to Qiskit's Python API, including most [methods to add standard instructions](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions).  A `QuantumCircuit` object also provides the following properties: `num_qubits`, `num_clbits`, and `num_instructions`.
+Operations are added to a `QuantumCircuit` using the `!`-suffixed functions in
+`Qiskit.Operations`, which take the circuit as their first argument.  These
+names are not exported from `Qiskit` itself — you opt in with `using
+Qiskit.Operations` — because generic verbs such as `measure!` and `reset!`
+should only enter your namespace if you ask for them.  They can also be
+referenced fully-qualified, e.g. `Qiskit.h!`.  Most of Qiskit's [standard
+instructions](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.QuantumCircuit#methods-to-add-standard-instructions)
+are available.  A `QuantumCircuit` object also provides the following
+properties: `num_qubits`, `num_clbits`, and `num_instructions`.
 
-One crucial difference between this package and the Python API is that in this package, everything is indexed starting with one rather than zero, since that is the norm in Julia.
+Qubits and clbits are indexed starting with one rather than zero, since that is
+the norm in Julia.  This is a crucial difference from Qiskit's Python API.
 
-### Idiomatic Julia interface (`Qiskit.Operations`)
-
-The `qc.h(1)` form above mirrors Qiskit's Python API.  If you prefer a more
-idiomatic-Julia style, `Qiskit.Operations` provides the same operations as
-`!`-suffixed functions that take the circuit as their first argument:
-
-```julia
-using Qiskit
-using Qiskit.Operations # opt-in: brings h!, cx!, measure!, ... into scope
-
-function build_bell()
-    qc = QuantumCircuit(2, 2)
-    h!(qc, 1)
-    cx!(qc, 1, 2)
-    measure!(qc, 1, 1)
-    measure!(qc, 2, 2)
-    qc
-end
-```
-
-`h!(qc, 1)` and `qc.h(1)` append the same instruction; following Julia
-convention, the `!` function returns `qc` whereas the property-style form
-returns `nothing`.  These names are not exported from `Qiskit` itself — you opt
-in with `using Qiskit.Operations` — because generic verbs such as `measure!` and
-`reset!` should only enter your namespace if you ask for them.
+Each operation is also available in a property-style form that mirrors Qiskit's
+Python API, e.g. `qc.h(1)` appends the same instruction as `h!(qc, 1)`.
+Following Julia convention, the `!` function returns `qc`, whereas the
+property-style form returns `nothing`.
 
 More usage examples can be found in the `test/` directory.
 
